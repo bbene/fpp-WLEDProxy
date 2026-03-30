@@ -42,8 +42,9 @@ if [ ! -L "${WEB_LINK}" ]; then
 fi
 
 # ── 4. Install Apache URL rewriting config ───────────────────────────────────
-# Routes /json/* and /win to our PHP handler so WLED apps find the API
-# at the expected paths. FPP v9 uses Apache, so .htaccess handles URL rewriting.
+# Routes /json/* and /win to our PHP handler so WLED apps find the API.
+# FPP v9 uses Apache with AllowOverride disabled globally, so .htaccess doesn't work.
+# Instead, we add rewrite rules directly to the VirtualHost config.
 
 # Ensure Apache mod_rewrite is enabled
 if command -v a2enmod &>/dev/null; then
@@ -51,30 +52,33 @@ if command -v a2enmod &>/dev/null; then
     echo "[${PLUGIN_NAME}] Ensured Apache mod_rewrite is enabled."
 fi
 
-# Install root-level .htaccess rewrite rules at FPP web root
-ROOT_HTACCESS_SRC="${PLUGIN_DIR}/conf/.htaccess-fpp-root"
-ROOT_HTACCESS="${FPP_WEB_ROOT}/.htaccess"
-if [ -f "${ROOT_HTACCESS_SRC}" ]; then
-    # Backup existing .htaccess if it exists
-    if [ -f "${ROOT_HTACCESS}" ]; then
-        cp "${ROOT_HTACCESS}" "${ROOT_HTACCESS}.backup-before-wledproxy"
-        echo "[${PLUGIN_NAME}] Backed up existing .htaccess to ${ROOT_HTACCESS}.backup-before-wledproxy"
+# Update Apache VirtualHost config to add rewrite rules
+APACHE_SITE_CONF="/etc/apache2/sites-available/000-default.conf"
+if [ -f "${APACHE_SITE_CONF}" ]; then
+    # Check if WLED rules already exist
+    if grep -q "WLED API Proxy" "${APACHE_SITE_CONF}"; then
+        echo "[${PLUGIN_NAME}] WLED rewrite rules already present in Apache config"
+    else
+        # Add WLED rewrite rules after DocumentRoot directive
+        REWRITE_RULES='
+
+    # WLED API Proxy - route /json/* and /win/* to plugin
+    <IfModule mod_rewrite.c>
+        RewriteEngine On
+        RewriteCond %{REQUEST_FILENAME} !-f
+        RewriteCond %{REQUEST_FILENAME} !-d
+        RewriteCond %{REQUEST_URI} ^/(json|win)
+        RewriteRule ^(json|win)(.*) /plugin/fpp-WLEDProxy/$1$2 [L,QSA,PT]
+    </IfModule>'
         
-        # Remove old WLED rewrite rules if present (to avoid duplicates)
-        if grep -q "WLED API Proxy" "${ROOT_HTACCESS}" 2>/dev/null; then
-            # Remove everything from "# FPP WLED API Proxy" to the closing </IfModule>
-            sed -i '/# FPP WLED API Proxy/,/^<\/IfModule>$/d' "${ROOT_HTACCESS}"
-            # Remove any trailing blank lines that might have been left
-            sed -i -e :a -e '/^\s*$/d;N;ba' "${ROOT_HTACCESS}"
-            echo "[${PLUGIN_NAME}] Removed old WLED rewrite rules from ${ROOT_HTACCESS}"
-        fi
+        # Use sed to insert after DocumentRoot line
+        sudo sed -i "/DocumentRoot \/opt\/fpp\/www/a\\${REWRITE_RULES}" "${APACHE_SITE_CONF}" 2>/dev/null || \
+        echo "[${PLUGIN_NAME}] WARNING: Could not modify Apache config. Please add rewrite rules manually."
+        
+        echo "[${PLUGIN_NAME}] Added WLED rewrite rules to Apache VirtualHost config."
     fi
-    
-    # Append new WLED rewrite rules to root .htaccess
-    cat "${ROOT_HTACCESS_SRC}" >> "${ROOT_HTACCESS}"
-    echo "[${PLUGIN_NAME}] Added WLED rewrite rules to ${ROOT_HTACCESS}"
 else
-    echo "[${PLUGIN_NAME}] WARNING: Root .htaccess template not found at ${ROOT_HTACCESS_SRC}"
+    echo "[${PLUGIN_NAME}] WARNING: Apache site config not found at ${APACHE_SITE_CONF}"
 fi
 
 # Reload Apache to apply rewrite rules

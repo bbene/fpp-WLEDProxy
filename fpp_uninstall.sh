@@ -20,14 +20,31 @@ if [ -L "${WEB_LINK}" ]; then
     echo "[${PLUGIN_NAME}] Removed web symlink: ${WEB_LINK}"
 fi
 
-# ── 2. Remove root-level Apache rewrite rules (if added by installer) ───────
-# Restore backup or remove WLED rewrite rules from .htaccess
-if [ -f "${FPP_WEB_ROOT}/.htaccess.backup-before-wledproxy" ]; then
-    mv "${FPP_WEB_ROOT}/.htaccess.backup-before-wledproxy" "${FPP_WEB_ROOT}/.htaccess"
-    echo "[${PLUGIN_NAME}] Restored previous root .htaccess from backup."
+# ── 2. Remove Apache VirtualHost rewrite rules ────────────────────────────
+# Remove WLED rewrite rules from the Apache VirtualHost config
+APACHE_SITE_CONF="/etc/apache2/sites-available/000-default.conf"
+if [ -f "${APACHE_SITE_CONF}" ]; then
+    # Remove the WLED API Proxy section
+    if grep -q "WLED API Proxy" "${APACHE_SITE_CONF}" 2>/dev/null; then
+        sudo sed -i '/# WLED API Proxy/,/<\/IfModule>/d' "${APACHE_SITE_CONF}"
+        
+        # Reload Apache to apply changes
+        if command -v systemctl &>/dev/null; then
+            sudo systemctl reload apache2 2>/dev/null || true
+        elif command -v service &>/dev/null; then
+            sudo service apache2 reload 2>/dev/null || true
+        fi
+        
+        echo "[${PLUGIN_NAME}] Removed WLED rewrite rules from Apache config."
+        echo "[${PLUGIN_NAME}] Apache reloaded."
+    fi
+    
+    # If a backup exists, user can manually restore it if desired
+    if [ -f "${APACHE_SITE_CONF}.backup-before-wledproxy" ]; then
+        echo "[${PLUGIN_NAME}] Backup of Apache config exists at: ${APACHE_SITE_CONF}.backup-before-wledproxy"
+        echo "[${PLUGIN_NAME}] To restore it, run: sudo cp ${APACHE_SITE_CONF}.backup-before-wledproxy ${APACHE_SITE_CONF}"
+    fi
 fi
-# If no backup exists, sed can safely do nothing if pattern doesn't match
-sed -i '/^# WLED API Proxy/,/^$/d' "${FPP_WEB_ROOT}/.htaccess" 2>/dev/null || true
 
 # ── 3. Backup config and state files (optional) ──────────────────────────────
 # We don't delete these automatically in case they contain user config.
