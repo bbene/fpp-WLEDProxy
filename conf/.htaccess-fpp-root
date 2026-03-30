@@ -4,11 +4,13 @@
 <IfModule mod_rewrite.c>
     RewriteEngine On
 
+    # Don't rewrite if it's a real file or directory
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+
     # WLED JSON API - route to plugin
-    RewriteCond %{REQUEST_URI} ^/json
     RewriteRule ^json(.*)$ /plugin/fpp-WLEDProxy/wled_api.php [L,QSA]
 
-    # WLED HTTP Request API - route to plugin  
-    RewriteCond %{REQUEST_URI} ^/win
+    # WLED HTTP Request API - route to plugin
     RewriteRule ^win(.*)$ /plugin/fpp-WLEDProxy/wled_api.php [L,QSA]
 </IfModule>

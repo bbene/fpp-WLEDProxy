@@ -41,9 +41,9 @@ if [ ! -L "${WEB_LINK}" ]; then
     echo "[${PLUGIN_NAME}] Created web symlink: ${WEB_LINK}"
 fi
 
-# ── 4. Install lighttpd URL rewriting config ───────────────────────────────────
+# ── 4. Install Apache URL rewriting config ───────────────────────────────────
 # Routes /json/* and /win to our PHP handler so WLED apps find the API
-# at the expected paths. FPP uses Apache, so .htaccess handles URL rewriting.
+# at the expected paths. FPP v9 uses Apache, so .htaccess handles URL rewriting.
 
 # Ensure Apache mod_rewrite is enabled
 if command -v a2enmod &>/dev/null; then
