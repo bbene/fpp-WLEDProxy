@@ -8,7 +8,7 @@
         {
             "minFPPVersion": "7.0",
             "maxFPPVersion": "7.99",
-            "branch": "master",
+            "branch": "main",
             "sha": "",
             "dependencies": {
                 "packages": [
@@ -19,7 +19,7 @@
         {
             "minFPPVersion": "8.0",
             "maxFPPVersion": "8.99",
-            "branch": "master",
+            "branch": "main",
             "sha": "",
             "dependencies": {
                 "packages": [
@@ -30,7 +30,7 @@
         {
             "minFPPVersion": "9.0",
             "maxFPPVersion": "0",
-            "branch": "master",
+            "branch": "main",
             "sha": "",
             "dependencies": {
                 "packages": [
