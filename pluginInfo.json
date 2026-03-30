@@ -11,7 +11,7 @@
     "startScriptName": "fpp_start.sh",
     "stopScriptName": "fpp_stop.sh",
     "uninstallScriptName": "fpp_uninstall.sh",
-    "setupScriptName": "www/plugin_setup.php",
+    "setupScriptName": "plugin_setup.php",
     "versions": [
         {
             "minFPPVersion": "7.0",
