@@ -8,9 +8,9 @@
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d
 
-    # WLED JSON API - route to plugin
-    RewriteRule ^json(.*)$ /plugin/fpp-WLEDProxy/wled_api.php [L,QSA]
+    # WLED JSON API - route to plugin, preserving original path in WLED_PATH env var
+    RewriteRule ^(json.*)$ /plugin/fpp-WLEDProxy/wled_api.php [E=WLED_PATH:/$1,L,QSA]
 
-    # WLED HTTP Request API - route to plugin
-    RewriteRule ^win(.*)$ /plugin/fpp-WLEDProxy/wled_api.php [L,QSA]
+    # WLED HTTP Request API - route to plugin, preserving original path
+    RewriteRule ^(win.*)$ /plugin/fpp-WLEDProxy/wled_api.php [E=WLED_PATH:/$1,L,QSA]
 </IfModule>

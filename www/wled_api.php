@@ -310,9 +310,10 @@ function buildInfoJson(array $cfg, int $fxcount, int $palcount): array {
 
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 
-// REQUEST_URI holds the ORIGINAL path before lighttpd rewrote it.
+// Apache rewrite sets WLED_PATH env var to preserve the original path before rewriting.
+// Fall back to REQUEST_URI if WLED_PATH is not available.
 // e.g. "/json/state?foo=bar" → path="/json/state", query="foo=bar"
-$requestUri = $_SERVER['REQUEST_URI'] ?? '/json';
+$requestUri = getenv('WLED_PATH') ?: ($_SERVER['REQUEST_URI'] ?? '/json');
 $path       = parse_url($requestUri, PHP_URL_PATH) ?? '/json';
 $path       = rtrim($path, '/') ?: '/json';
 
