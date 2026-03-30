@@ -11,6 +11,7 @@
     # Only match /json or /win paths
     RewriteCond %{REQUEST_URI} ^/(json|win)
 
-    # Rewrite to plugin handler, passing the original path as _path query param
-    RewriteRule ^(.+)$ /plugin/fpp-WLEDProxy/wled_api.php?_path=/$1 [L,QSA,PT]
+    # Test: Return a 500 error to confirm the rewrite is being triggered
+    # This will help us verify the rule is matching
+    RewriteRule ^(.+)$ - [L,R=500]
 </IfModule>
