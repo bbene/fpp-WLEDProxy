@@ -34,6 +34,8 @@ echo "[${PLUGIN_NAME}] Compilation succeeded."
 # ── 3. Symlink the www/ directory into FPP's web root ─────────────────────────
 # FPP serves plugin PHP files from /opt/fpp/www/plugin/{name}/
 WEB_LINK="${FPP_WEB_ROOT}/plugin/${PLUGIN_NAME}"
+WEB_PARENT=$(dirname "${WEB_LINK}")
+mkdir -p "${WEB_PARENT}"
 if [ ! -L "${WEB_LINK}" ]; then
     ln -s "${PLUGIN_DIR}/www" "${WEB_LINK}"
     echo "[${PLUGIN_NAME}] Created web symlink: ${WEB_LINK}"
