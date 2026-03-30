@@ -371,93 +371,10 @@ WLEDProxyPlugin::~WLEDProxyPlugin() {
 
 // ── FPPPlugin overrides ──────────────────────────────────────────────────────
 
-void WLEDProxyPlugin::loadSettings(const std::string& pluginDirectory) {
-    m_pluginDir = pluginDirectory;
-
-    std::ifstream cfgFile(CONFIG_FILE_PATH);
-    if (!cfgFile.is_open()) {
-        LogInfo(VB_PLUGIN, "WLEDProxy: no config file found, using defaults\n");
-        return;
-    }
-
-    Json::Value cfg;
-    Json::CharReaderBuilder rdr;
-    std::string errs;
-    if (!Json::parseFromStream(rdr, cfgFile, &cfg, &errs)) {
-        LogErr(VB_PLUGIN, "WLEDProxy: failed to parse config: %s\n", errs.c_str());
-        return;
-    }
-
-    if (cfg.isMember("OverlayModelName")) m_overlayModelName  = cfg["OverlayModelName"].asString();
-    if (cfg.isMember("LEDCount"))         m_ledCount          = cfg["LEDCount"].asInt();
-    if (cfg.isMember("DeviceName"))       m_deviceName        = cfg["DeviceName"].asString();
-    if (cfg.isMember("EnableUDPDiscovery")) m_enableUdpDiscovery = cfg["EnableUDPDiscovery"].asBool();
-
-    // Keep segment stop in sync with LED count
-    {
-        std::lock_guard<std::mutex> lock(m_stateMutex);
-        m_state.seg.stop = m_ledCount;
-        m_state.seg.len  = m_ledCount;
-    }
-
-    LogInfo(VB_PLUGIN, "WLEDProxy: loaded config — model='%s', LEDs=%d, name='%s'\n",
-            m_overlayModelName.c_str(), m_ledCount, m_deviceName.c_str());
-}
-
 void WLEDProxyPlugin::registerApis(httpserver::webserver* server) {
-    // ── Internal API routes (accessible at /fpp/api/plugin/fpp-WLEDProxy/*)
-    // These are called by the PHP layer and can also be used by automation tools.
-
-    // GET /fpp/api/plugin/fpp-WLEDProxy/state
-    server->addGetHandler("/fpp/api/plugin/fpp-WLEDProxy/state",
-        [this](const httpRequest& req, httpResponse& res) {
-            res.setStatus(200);
-            res.setHeader("Content-Type", "application/json");
-            res.setBody(getStateJson());
-        });
-
-    // POST /fpp/api/plugin/fpp-WLEDProxy/state
-    server->addPostHandler("/fpp/api/plugin/fpp-WLEDProxy/state",
-        [this](const httpRequest& req, httpResponse& res) {
-            Json::Value update;
-            Json::CharReaderBuilder rdr;
-            std::string errs;
-            std::istringstream ss(req.getBody());
-            if (Json::parseFromStream(rdr, ss, &update, &errs)) {
-                res.setStatus(200);
-                res.setHeader("Content-Type", "application/json");
-                res.setBody(applyStateUpdate(update));
-            } else {
-                res.setStatus(400);
-                res.setBody("{\"error\":\"invalid JSON\"}");
-            }
-        });
-
-    // GET /fpp/api/plugin/fpp-WLEDProxy/info
-    server->addGetHandler("/fpp/api/plugin/fpp-WLEDProxy/info",
-        [this](const httpRequest& req, httpResponse& res) {
-            res.setStatus(200);
-            res.setHeader("Content-Type", "application/json");
-            res.setBody(getInfoJson());
-        });
-
-    // GET /fpp/api/plugin/fpp-WLEDProxy/effects
-    server->addGetHandler("/fpp/api/plugin/fpp-WLEDProxy/effects",
-        [](const httpRequest& req, httpResponse& res) {
-            res.setStatus(200);
-            res.setHeader("Content-Type", "application/json");
-            res.setBody(WLEDProxyPlugin::getEffectsJson());
-        });
-
-    // GET /fpp/api/plugin/fpp-WLEDProxy/palettes
-    server->addGetHandler("/fpp/api/plugin/fpp-WLEDProxy/palettes",
-        [](const httpRequest& req, httpResponse& res) {
-            res.setStatus(200);
-            res.setHeader("Content-Type", "application/json");
-            res.setBody(WLEDProxyPlugin::getPalettesJson());
-        });
-
-    LogInfo(VB_PLUGIN, "WLEDProxy: registered internal API routes\n");
+    // HTTP APIs are handled by the PHP layer (www/wled_api.php) via lighttpd routing.
+    // The C++ plugin focuses on UDP discovery, mDNS, and state persistence.
+    // This stub is here for FPP plugin compatibility but performs no action.
 }
 
 // ── Public API helpers ───────────────────────────────────────────────────────

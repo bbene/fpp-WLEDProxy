@@ -97,11 +97,6 @@ public:
      */
     virtual void registerApis(httpserver::webserver* server) override;
 
-    /**
-     * Called when the plugin's config file changes.
-     */
-    virtual void loadSettings(const std::string& pluginDirectory) override;
-
     // ── Public helpers (called by fppd API routes) ───────────────────────────
 
     /** Return the current WLED state as a JSON string. */
