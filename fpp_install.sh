@@ -59,15 +59,20 @@ if [ -f "${ROOT_HTACCESS_SRC}" ]; then
     if [ -f "${ROOT_HTACCESS}" ]; then
         cp "${ROOT_HTACCESS}" "${ROOT_HTACCESS}.backup-before-wledproxy"
         echo "[${PLUGIN_NAME}] Backed up existing .htaccess to ${ROOT_HTACCESS}.backup-before-wledproxy"
+        
+        # Remove old WLED rewrite rules if present (to avoid duplicates)
+        if grep -q "WLED API Proxy" "${ROOT_HTACCESS}" 2>/dev/null; then
+            # Remove everything from "# FPP WLED API Proxy" to the closing </IfModule>
+            sed -i '/# FPP WLED API Proxy/,/^<\/IfModule>$/d' "${ROOT_HTACCESS}"
+            # Remove any trailing blank lines that might have been left
+            sed -i -e :a -e '/^\s*$/d;N;ba' "${ROOT_HTACCESS}"
+            echo "[${PLUGIN_NAME}] Removed old WLED rewrite rules from ${ROOT_HTACCESS}"
+        fi
     fi
     
-    # Append WLED rewrite rules to root .htaccess
-    if grep -q "WLED API Proxy" "${ROOT_HTACCESS}" 2>/dev/null; then
-        echo "[${PLUGIN_NAME}] WLED rewrite rules already present in ${ROOT_HTACCESS}"
-    else
-        cat "${ROOT_HTACCESS_SRC}" >> "${ROOT_HTACCESS}"
-        echo "[${PLUGIN_NAME}] Added WLED rewrite rules to ${ROOT_HTACCESS}"
-    fi
+    # Append new WLED rewrite rules to root .htaccess
+    cat "${ROOT_HTACCESS_SRC}" >> "${ROOT_HTACCESS}"
+    echo "[${PLUGIN_NAME}] Added WLED rewrite rules to ${ROOT_HTACCESS}"
 else
     echo "[${PLUGIN_NAME}] WARNING: Root .htaccess template not found at ${ROOT_HTACCESS_SRC}"
 fi
