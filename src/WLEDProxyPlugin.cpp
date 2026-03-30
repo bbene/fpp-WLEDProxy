@@ -7,7 +7,7 @@
  *   3. FPP overlay model effect control via FPP's internal REST API
  *   4. State persistence to /home/fpp/media/config/wled_proxy_state.json
  *
- * The HTTP-facing WLED JSON API (/json/*, /win) is handled by the
+ * The HTTP-facing WLED JSON API (/json endpoints, /win) is handled by the
  * companion PHP file www/wled_api.php, routed via lighttpd rewrite rules
  * in conf/88-wled-proxy.conf.  The PHP layer reads/writes the state file
  * and calls FPP's API to trigger effects.  This C++ plugin registers
