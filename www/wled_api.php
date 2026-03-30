@@ -310,11 +310,9 @@ function buildInfoJson(array $cfg, int $fxcount, int $palcount): array {
 
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 
-// Apache rewrite passes the original path as _wled_path query parameter.
-// Fall back to REQUEST_URI if not available.
-// e.g. "GET /json/state?foo=bar" → _wled_path="json/state", query param "foo" preserved
-$wledPath = $_GET['_wled_path'] ?? null;
-$requestUri = $wledPath ? ('/' . $wledPath) : ($_SERVER['REQUEST_URI'] ?? '/json');
+// REQUEST_URI holds the original request path even after Apache internal rewrites
+// e.g. GET /json/info → REQUEST_URI="/json/info"
+$requestUri = $_SERVER['REQUEST_URI'] ?? '/json';
 $path       = parse_url($requestUri, PHP_URL_PATH) ?? '/json';
 $path       = rtrim($path, '/') ?: '/json';
 
