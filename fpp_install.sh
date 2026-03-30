@@ -52,11 +52,13 @@ if [ -f "${CONF_SRC}" ]; then
     cp "${CONF_SRC}" "${CONF_DEST}"
     echo "[${PLUGIN_NAME}] Installed lighttpd config: ${CONF_DEST}"
     # Validate and reload lighttpd
-    if lighttpd -t -f /etc/lighttpd/lighttpd.conf 2>/dev/null; then
+    if lighttpd -t -f /etc/lighttpd/lighttpd.conf 2>&1 | grep -q "syntax ok"; then
         systemctl reload lighttpd 2>/dev/null || service lighttpd reload 2>/dev/null || true
         echo "[${PLUGIN_NAME}] lighttpd reloaded."
     else
-        echo "[${PLUGIN_NAME}] WARNING: lighttpd config test failed — check ${CONF_DEST}"
+        echo "[${PLUGIN_NAME}] WARNING: lighttpd config test failed. Error:"
+        lighttpd -t -f /etc/lighttpd/lighttpd.conf 2>&1 || true
+        echo "[${PLUGIN_NAME}] Please check the config file and restart lighttpd manually."
     fi
 else
     echo "[${PLUGIN_NAME}] WARNING: lighttpd config not found at ${CONF_SRC}"
