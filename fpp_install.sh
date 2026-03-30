@@ -51,8 +51,26 @@ if command -v a2enmod &>/dev/null; then
     echo "[${PLUGIN_NAME}] Ensured Apache mod_rewrite is enabled."
 fi
 
-# Note: .htaccess is already in www/ directory and accessible via the symlink,
-# so no need to copy it separately.
+# Install root-level .htaccess rewrite rules at FPP web root
+ROOT_HTACCESS_SRC="${PLUGIN_DIR}/conf/.htaccess-fpp-root"
+ROOT_HTACCESS="${FPP_WEB_ROOT}/.htaccess"
+if [ -f "${ROOT_HTACCESS_SRC}" ]; then
+    # Backup existing .htaccess if it exists
+    if [ -f "${ROOT_HTACCESS}" ]; then
+        cp "${ROOT_HTACCESS}" "${ROOT_HTACCESS}.backup-before-wledproxy"
+        echo "[${PLUGIN_NAME}] Backed up existing .htaccess to ${ROOT_HTACCESS}.backup-before-wledproxy"
+    fi
+    
+    # Append WLED rewrite rules to root .htaccess
+    if grep -q "WLED API Proxy" "${ROOT_HTACCESS}" 2>/dev/null; then
+        echo "[${PLUGIN_NAME}] WLED rewrite rules already present in ${ROOT_HTACCESS}"
+    else
+        cat "${ROOT_HTACCESS_SRC}" >> "${ROOT_HTACCESS}"
+        echo "[${PLUGIN_NAME}] Added WLED rewrite rules to ${ROOT_HTACCESS}"
+    fi
+else
+    echo "[${PLUGIN_NAME}] WARNING: Root .htaccess template not found at ${ROOT_HTACCESS_SRC}"
+fi
 
 # Reload Apache to apply rewrite rules
 if systemctl is-active --quiet apache2 2>/dev/null; then

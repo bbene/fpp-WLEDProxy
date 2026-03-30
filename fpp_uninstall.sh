@@ -20,7 +20,16 @@ if [ -L "${WEB_LINK}" ]; then
     echo "[${PLUGIN_NAME}] Removed web symlink: ${WEB_LINK}"
 fi
 
-# ── 2. Backup config and state files (optional) ──────────────────────────────
+# ── 2. Remove root-level Apache rewrite rules (if added by installer) ───────
+# Restore backup or remove WLED rewrite rules from .htaccess
+if [ -f "${FPP_WEB_ROOT}/.htaccess.backup-before-wledproxy" ]; then
+    mv "${FPP_WEB_ROOT}/.htaccess.backup-before-wledproxy" "${FPP_WEB_ROOT}/.htaccess"
+    echo "[${PLUGIN_NAME}] Restored previous root .htaccess from backup."
+fi
+# If no backup exists, sed can safely do nothing if pattern doesn't match
+sed -i '/^# WLED API Proxy/,/^$/d' "${FPP_WEB_ROOT}/.htaccess" 2>/dev/null || true
+
+# ── 3. Backup config and state files (optional) ──────────────────────────────
 # We don't delete these automatically in case they contain user config.
 # User can manually delete them if desired.
 BACKUP_DIR="/home/fpp/media/config/backups"
