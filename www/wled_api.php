@@ -315,7 +315,12 @@ $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 $requestUri = $_SERVER['REQUEST_URI'] ?? '/json';
 $path       = parse_url($requestUri, PHP_URL_PATH) ?? '/json';
 $path       = rtrim($path, '/') ?: '/json';
-
+// DEBUG: Log all request info to help troubleshoot rewrite issues
+error_log("[WLED Plugin DEBUG] REQUEST_URI=" . ($requestUri ?? 'NULL'));
+error_log("[WLED Plugin DEBUG] path=" . $path);
+error_log("[WLED Plugin DEBUG] REQUEST_METHOD=" . $method);
+error_log("[WLED Plugin DEBUG] SCRIPT_NAME=" . ($_SERVER['SCRIPT_NAME'] ?? 'NULL'));
+error_log("[WLED Plugin DEBUG] SCRIPT_FILENAME=" . ($_SERVER['SCRIPT_FILENAME'] ?? 'NULL'));
 // Set JSON response headers
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
@@ -504,5 +509,7 @@ if ($path === '/json' || str_starts_with($path, '/json')) {
 }
 
 // ── Fallback ──────────────────────────────────────────────────────────────────
+error_log("[WLED Plugin DEBUG 404] No matching route found for path: " . $path);
+error_log("[WLED Plugin DEBUG 404] REQUEST_URI: " . ($_SERVER['REQUEST_URI'] ?? 'NULL'));
 http_response_code(404);
 echo json_encode(['error' => 'Unknown WLED API path: ' . $path]);

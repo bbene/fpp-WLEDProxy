@@ -1,22 +1,26 @@
 # WLED API Proxy - Apache URL Rewriting
-# Redirects WLED-compatible API paths to wled_api.php handler
+# DISABLED: Root-level .htaccess in /opt/fpp/www/ now handles all routing.
+# This file is kept for documentation but intentionally does NOT rewrite
+# to avoid conflicts with the root-level rules.
 
-<IfModule mod_rewrite.c>
-    RewriteEngine On
-    RewriteBase /plugin/fpp-WLEDProxy/
-
-    # WLED JSON API endpoints
-    RewriteRule ^json/effects$ wled_api.php [L,QSA]
-    RewriteRule ^json/palettes$ wled_api.php [L,QSA]
-    RewriteRule ^json/state$ wled_api.php [L,QSA]
-    RewriteRule ^json/info$ wled_api.php [L,QSA]
-    RewriteRule ^json/si$ wled_api.php [L,QSA]
-    RewriteRule ^json/nodes$ wled_api.php [L,QSA]
-    RewriteRule ^json/eff$ wled_api.php [L,QSA]
-    RewriteRule ^json/pal$ wled_api.php [L,QSA]
-    RewriteRule ^json/?$ wled_api.php [L,QSA]
-
-    # WLED HTTP Request API (legacy)
-    RewriteRule ^win$ wled_api.php [L,QSA]
-    RewriteRule ^win/(.*)$ wled_api.php [L,QSA]
-</IfModule>
+# To route directly to this plugin without root-level rewrites, uncomment the rules below:
+#
+# <IfModule mod_rewrite.c>
+#     RewriteEngine On
+#     RewriteBase /plugin/fpp-WLEDProxy/
+#
+#     # WLED JSON API endpoints
+#     RewriteRule ^json/effects$ wled_api.php [L,QSA]
+#     RewriteRule ^json/palettes$ wled_api.php [L,QSA]
+#     RewriteRule ^json/state$ wled_api.php [L,QSA]
+#     RewriteRule ^json/info$ wled_api.php [L,QSA]
+#     RewriteRule ^json/si$ wled_api.php [L,QSA]
+#     RewriteRule ^json/nodes$ wled_api.php [L,QSA]
+#     RewriteRule ^json/eff$ wled_api.php [L,QSA]
+#     RewriteRule ^json/pal$ wled_api.php [L,QSA]
+#     RewriteRule ^json/?$ wled_api.php [L,QSA]
+#
+#     # WLED HTTP Request API (legacy)
+#     RewriteRule ^win$ wled_api.php [L,QSA]
+#     RewriteRule ^win/(.*)$ wled_api.php [L,QSA]
+# </IfModule>
