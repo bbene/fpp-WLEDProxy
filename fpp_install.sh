@@ -47,6 +47,7 @@ fi
 CONF_SRC="${PLUGIN_DIR}/conf/88-wled-proxy.conf"
 CONF_DEST="${LIGHTTPD_CONF_DIR}/88-wled-proxy.conf"
 
+mkdir -p "${LIGHTTPD_CONF_DIR}"
 if [ -f "${CONF_SRC}" ]; then
     cp "${CONF_SRC}" "${CONF_DEST}"
     echo "[${PLUGIN_NAME}] Installed lighttpd config: ${CONF_DEST}"
