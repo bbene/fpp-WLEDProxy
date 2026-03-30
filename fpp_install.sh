@@ -43,30 +43,27 @@ fi
 
 # ── 4. Install lighttpd URL rewriting config ───────────────────────────────────
 # Routes /json/* and /win to our PHP handler so WLED apps find the API
-# at the expected paths.
-CONF_SRC="${PLUGIN_DIR}/conf/88-wled-proxy.conf"
-CONF_DEST="${LIGHTTPD_CONF_DIR}/88-wled-proxy.conf"
+# at the expected paths. FPP uses Apache, so we use .htaccess instead of lighttpd.
+HTACCESS_SRC="${PLUGIN_DIR}/www/.htaccess"
+HTACCESS_DEST="${WEB_LINK}/.htaccess"
 
-mkdir -p "${LIGHTTPD_CONF_DIR}"
-if [ -f "${CONF_SRC}" ]; then
-    cp "${CONF_SRC}" "${CONF_DEST}"
-    echo "[${PLUGIN_NAME}] Installed lighttpd config: ${CONF_DEST}"
-    # Validate and reload lighttpd (try multiple paths)
-    LIGHTTPD_BIN=$(which lighttpd 2>/dev/null || echo /usr/sbin/lighttpd)
-    if [ -x "${LIGHTTPD_BIN}" ]; then
-        if "${LIGHTTPD_BIN}" -t -f /etc/lighttpd/lighttpd.conf 2>&1 | grep -q "syntax ok"; then
-            systemctl reload lighttpd 2>/dev/null || service lighttpd reload 2>/dev/null || true
-            echo "[${PLUGIN_NAME}] lighttpd config validated and service reloaded."
-        else
-            echo "[${PLUGIN_NAME}] WARNING: lighttpd config test failed:"
-            "${LIGHTTPD_BIN}" -t -f /etc/lighttpd/lighttpd.conf 2>&1 || true
-        fi
-    else
-        echo "[${PLUGIN_NAME}] NOTE: lighttpd binary not found; skipping validation."
-        echo "[${PLUGIN_NAME}] Please verify config manually: ${CONF_DEST}"
+# Ensure Apache mod_rewrite is enabled
+if command -v a2enmod &>/dev/null; then
+    a2enmod rewrite 2>/dev/null || true
+fi
+
+if [ -f "${HTACCESS_SRC}" ]; then
+    cp "${HTACCESS_SRC}" "${HTACCESS_DEST}"
+    chmod 644 "${HTACCESS_DEST}"
+    echo "[${PLUGIN_NAME}] Installed Apache .htaccess: ${HTACCESS_DEST}"
+    
+    # Reload Apache to apply rewrite rules
+    if systemctl is-active --quiet apache2 2>/dev/null; then
+        systemctl reload apache2 2>/dev/null || service apache2 reload 2>/dev/null || true
+        echo "[${PLUGIN_NAME}] Apache reloaded."
     fi
 else
-    echo "[${PLUGIN_NAME}] WARNING: lighttpd config not found at ${CONF_SRC}"
+    echo "[${PLUGIN_NAME}] WARNING: .htaccess not found at ${HTACCESS_SRC}"
 fi
 
 # ── 5. Create state and config directories ────────────────────────────────────

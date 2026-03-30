@@ -14,20 +14,20 @@ LIGHTTPD_CONF_DIR="/etc/lighttpd/conf-enabled"
 
 echo "[${PLUGIN_NAME}] Starting uninstallation..."
 
-# ── 1. Remove lighttpd config ───────────────────────────────────────────────
-CONF_DEST="${LIGHTTPD_CONF_DIR}/88-wled-proxy.conf"
-if [ -f "${CONF_DEST}" ]; then
-    rm -f "${CONF_DEST}"
-    echo "[${PLUGIN_NAME}] Removed lighttpd config: ${CONF_DEST}"
-    # Reload lighttpd to apply changes
-    if lighttpd -t -f /etc/lighttpd/lighttpd.conf 2>/dev/null; then
-        service lighttpd reload 2>/dev/null || true
-        echo "[${PLUGIN_NAME}] lighttpd reloaded."
+# ── 1. Remove .htaccess file ───────────────────────────────────────────────
+WEB_LINK="${FPP_WEB_ROOT}/plugin/${PLUGIN_NAME}"
+HTACCESS_FILE="${WEB_LINK}/.htaccess"
+if [ -f "${HTACCESS_FILE}" ]; then
+    rm -f "${HTACCESS_FILE}"
+    echo "[${PLUGIN_NAME}] Removed .htaccess: ${HTACCESS_FILE}"
+    # Reload Apache
+    if systemctl is-active --quiet apache2 2>/dev/null; then
+        systemctl reload apache2 2>/dev/null || service apache2 reload 2>/dev/null || true
+        echo "[${PLUGIN_NAME}] Apache reloaded."
     fi
 fi
 
 # ── 2. Remove web symlink ───────────────────────────────────────────────────
-WEB_LINK="${FPP_WEB_ROOT}/plugin/${PLUGIN_NAME}"
 if [ -L "${WEB_LINK}" ]; then
     rm -f "${WEB_LINK}"
     echo "[${PLUGIN_NAME}] Removed web symlink: ${WEB_LINK}"
