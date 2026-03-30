@@ -1,15 +1,18 @@
 {
+    "repoName": "fpp-WLEDProxy",
     "name": "FPP WLED API Proxy",
-    "description": "Exposes FPP as a WLED-compatible device. Allows any WLED app (Lightbow, WLED Wiz, Home Assistant, etc.) to discover and control FPP's overlay model effects as if FPP were a real WLED device.",
     "author": "Ben Benesh",
+    "description": "Exposes FPP as a WLED-compatible device. Allows any WLED app (Lightbow, WLED Wiz, Home Assistant, etc.) to discover and control FPP's overlay model effects as if FPP were a real WLED device.",
     "homeURL": "https://github.com/bbene/fpp-WLEDProxy",
-    "srcURL": "https://github.com/bbene/fpp-WLEDProxy",
-    "minFPPVersion": "7.0",
+    "srcURL": "https://github.com/bbene/fpp-WLEDProxy.git",
+    "bugURL": "https://github.com/bbene/fpp-WLEDProxy/issues",
+    "allowUpdates": 1,
     "versions": [
         {
             "minFPPVersion": "7.0",
             "maxFPPVersion": "7.99",
             "branch": "main",
+            "sha": "",
             "dependencies": {
                 "packages": [
                     "avahi-utils"
@@ -20,6 +23,7 @@
             "minFPPVersion": "8.0",
             "maxFPPVersion": "8.99",
             "branch": "main",
+            "sha": "",
             "dependencies": {
                 "packages": [
                     "avahi-utils"
@@ -28,8 +32,9 @@
         },
         {
             "minFPPVersion": "9.0",
-            "maxFPPVersion": "9.99",
+            "maxFPPVersion": "0",
             "branch": "main",
+            "sha": "",
             "dependencies": {
                 "packages": [
                     "avahi-utils"
