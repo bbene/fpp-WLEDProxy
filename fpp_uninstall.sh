@@ -10,30 +10,17 @@
 PLUGIN_NAME="fpp-WLEDProxy"
 PLUGIN_DIR="/home/fpp/media/plugins/${PLUGIN_NAME}"
 FPP_WEB_ROOT="/opt/fpp/www"
-LIGHTTPD_CONF_DIR="/etc/lighttpd/conf-enabled"
+WEB_LINK="${FPP_WEB_ROOT}/plugin/${PLUGIN_NAME}"
 
 echo "[${PLUGIN_NAME}] Starting uninstallation..."
 
-# ── 1. Remove .htaccess file ───────────────────────────────────────────────
-WEB_LINK="${FPP_WEB_ROOT}/plugin/${PLUGIN_NAME}"
-HTACCESS_FILE="${WEB_LINK}/.htaccess"
-if [ -f "${HTACCESS_FILE}" ]; then
-    rm -f "${HTACCESS_FILE}"
-    echo "[${PLUGIN_NAME}] Removed .htaccess: ${HTACCESS_FILE}"
-    # Reload Apache
-    if systemctl is-active --quiet apache2 2>/dev/null; then
-        systemctl reload apache2 2>/dev/null || service apache2 reload 2>/dev/null || true
-        echo "[${PLUGIN_NAME}] Apache reloaded."
-    fi
-fi
-
-# ── 2. Remove web symlink ───────────────────────────────────────────────────
+# ── 1. Remove web symlink (includes .htaccess) ────────────────────────────────
 if [ -L "${WEB_LINK}" ]; then
     rm -f "${WEB_LINK}"
     echo "[${PLUGIN_NAME}] Removed web symlink: ${WEB_LINK}"
 fi
 
-# ── 3. Backup config and state files (optional) ──────────────────────────────
+# ── 2. Backup config and state files (optional) ──────────────────────────────
 # We don't delete these automatically in case they contain user config.
 # User can manually delete them if desired.
 BACKUP_DIR="/home/fpp/media/config/backups"

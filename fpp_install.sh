@@ -43,27 +43,21 @@ fi
 
 # ── 4. Install lighttpd URL rewriting config ───────────────────────────────────
 # Routes /json/* and /win to our PHP handler so WLED apps find the API
-# at the expected paths. FPP uses Apache, so we use .htaccess instead of lighttpd.
-HTACCESS_SRC="${PLUGIN_DIR}/www/.htaccess"
-HTACCESS_DEST="${WEB_LINK}/.htaccess"
+# at the expected paths. FPP uses Apache, so .htaccess handles URL rewriting.
 
 # Ensure Apache mod_rewrite is enabled
 if command -v a2enmod &>/dev/null; then
     a2enmod rewrite 2>/dev/null || true
+    echo "[${PLUGIN_NAME}] Ensured Apache mod_rewrite is enabled."
 fi
 
-if [ -f "${HTACCESS_SRC}" ]; then
-    cp "${HTACCESS_SRC}" "${HTACCESS_DEST}"
-    chmod 644 "${HTACCESS_DEST}"
-    echo "[${PLUGIN_NAME}] Installed Apache .htaccess: ${HTACCESS_DEST}"
-    
-    # Reload Apache to apply rewrite rules
-    if systemctl is-active --quiet apache2 2>/dev/null; then
-        systemctl reload apache2 2>/dev/null || service apache2 reload 2>/dev/null || true
-        echo "[${PLUGIN_NAME}] Apache reloaded."
-    fi
-else
-    echo "[${PLUGIN_NAME}] WARNING: .htaccess not found at ${HTACCESS_SRC}"
+# Note: .htaccess is already in www/ directory and accessible via the symlink,
+# so no need to copy it separately.
+
+# Reload Apache to apply rewrite rules
+if systemctl is-active --quiet apache2 2>/dev/null; then
+    systemctl reload apache2 2>/dev/null || service apache2 reload 2>/dev/null || true
+    echo "[${PLUGIN_NAME}] Apache reloaded."
 fi
 
 # ── 5. Create state and config directories ────────────────────────────────────
