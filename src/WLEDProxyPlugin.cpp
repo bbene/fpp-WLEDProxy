@@ -404,7 +404,7 @@ void WLEDProxyPlugin::loadSettings(const std::string& pluginDirectory) {
             m_overlayModelName.c_str(), m_ledCount, m_deviceName.c_str());
 }
 
-void WLEDProxyPlugin::registerApis(httpserver* server) {
+void WLEDProxyPlugin::registerApis(httpserver::webserver* server) {
     // ── Internal API routes (accessible at /fpp/api/plugin/fpp-WLEDProxy/*)
     // These are called by the PHP layer and can also be used by automation tools.
 

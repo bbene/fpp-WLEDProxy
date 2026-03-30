@@ -95,7 +95,7 @@ public:
      * We register /fpp/api/plugin/fpp-WLEDProxy/* routes here.
      * (The main WLED paths /json/* and /win are handled by lighttpd + PHP.)
      */
-    virtual void registerApis(httpserver* server) override;
+    virtual void registerApis(httpserver::webserver* server) override;
 
     /**
      * Called when the plugin's config file changes.
