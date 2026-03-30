@@ -1,0 +1,16 @@
+# Build artifacts
+.build/
+src/*.so
+src/*.o
+*.so
+*.o
+
+# Editor / OS
+.DS_Store
+.vscode/
+*.swp
+*~
+
+# FPP runtime state (not part of the plugin source)
+wled_proxy_state.json
+plugin.fpp-WLEDProxy.json

@@ -1,0 +1,33 @@
+{
+    "name": "FPP WLED API Proxy",
+    "version": "1.0.0",
+    "author": "Ben Benesh",
+    "description": "Exposes FPP as a WLED-compatible device. Allows any WLED app (Lightbow, WLED Wiz, Home Assistant, etc.) to discover and control FPP's overlay model effects as if FPP were a real WLED device.",
+    "homepage": "https://github.com/bbene/fpp-WLEDProxy",
+    "repoURL": "https://github.com/bbene/fpp-WLEDProxy",
+    "type": "cpp",
+    "minFPPVersion": "6.0",
+    "provides": ["wled-api-proxy"],
+    "settings": {
+        "OverlayModelName": {
+            "type": "string",
+            "default": "All Pixels",
+            "description": "Name of the FPP Pixel Overlay Model to control via the WLED API"
+        },
+        "LEDCount": {
+            "type": "int",
+            "default": 300,
+            "description": "Number of LEDs/pixels in the overlay model"
+        },
+        "DeviceName": {
+            "type": "string",
+            "default": "FPP WLED",
+            "description": "Name advertised to WLED apps via mDNS discovery"
+        },
+        "EnableUDPDiscovery": {
+            "type": "bool",
+            "default": true,
+            "description": "Enable UDP discovery on port 21324 (WLED-compatible discovery)"
+        }
+    }
+}
