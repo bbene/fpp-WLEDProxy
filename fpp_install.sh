@@ -51,14 +51,19 @@ mkdir -p "${LIGHTTPD_CONF_DIR}"
 if [ -f "${CONF_SRC}" ]; then
     cp "${CONF_SRC}" "${CONF_DEST}"
     echo "[${PLUGIN_NAME}] Installed lighttpd config: ${CONF_DEST}"
-    # Validate and reload lighttpd
-    if lighttpd -t -f /etc/lighttpd/lighttpd.conf 2>&1 | grep -q "syntax ok"; then
-        systemctl reload lighttpd 2>/dev/null || service lighttpd reload 2>/dev/null || true
-        echo "[${PLUGIN_NAME}] lighttpd reloaded."
+    # Validate and reload lighttpd (try multiple paths)
+    LIGHTTPD_BIN=$(which lighttpd 2>/dev/null || echo /usr/sbin/lighttpd)
+    if [ -x "${LIGHTTPD_BIN}" ]; then
+        if "${LIGHTTPD_BIN}" -t -f /etc/lighttpd/lighttpd.conf 2>&1 | grep -q "syntax ok"; then
+            systemctl reload lighttpd 2>/dev/null || service lighttpd reload 2>/dev/null || true
+            echo "[${PLUGIN_NAME}] lighttpd config validated and service reloaded."
+        else
+            echo "[${PLUGIN_NAME}] WARNING: lighttpd config test failed:"
+            "${LIGHTTPD_BIN}" -t -f /etc/lighttpd/lighttpd.conf 2>&1 || true
+        fi
     else
-        echo "[${PLUGIN_NAME}] WARNING: lighttpd config test failed. Error:"
-        lighttpd -t -f /etc/lighttpd/lighttpd.conf 2>&1 || true
-        echo "[${PLUGIN_NAME}] Please check the config file and restart lighttpd manually."
+        echo "[${PLUGIN_NAME}] NOTE: lighttpd binary not found; skipping validation."
+        echo "[${PLUGIN_NAME}] Please verify config manually: ${CONF_DEST}"
     fi
 else
     echo "[${PLUGIN_NAME}] WARNING: lighttpd config not found at ${CONF_SRC}"
