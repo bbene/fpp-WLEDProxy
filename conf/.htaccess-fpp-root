@@ -4,14 +4,6 @@
 <IfModule mod_rewrite.c>
     RewriteEngine On
 
-    # Don't rewrite if it's a real file or directory
-    RewriteCond %{REQUEST_FILENAME} !-f
-    RewriteCond %{REQUEST_FILENAME} !-d
-    
-    # Only match /json or /win paths
-    RewriteCond %{REQUEST_URI} ^/(json|win)
-
-    # Test: Return a 500 error to confirm the rewrite is being triggered
-    # This will help us verify the rule is matching
-    RewriteRule ^(.+)$ - [L,R=500]
+    # Test without any conditions - just check if ANY request triggers this
+    RewriteRule ^json - [L,R=500]
 </IfModule>
