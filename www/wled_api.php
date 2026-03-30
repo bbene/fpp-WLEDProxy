@@ -310,17 +310,17 @@ function buildInfoJson(array $cfg, int $fxcount, int $palcount): array {
 
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 
-// REQUEST_URI holds the original request path even after Apache internal rewrites
-// e.g. GET /json/info → REQUEST_URI="/json/info"
-$requestUri = $_SERVER['REQUEST_URI'] ?? '/json';
-$path       = parse_url($requestUri, PHP_URL_PATH) ?? '/json';
+// Apache rewrite passes the original path as _path query parameter
+// This ensures we always have the correct path even after rewrites
+// e.g. GET /json/info → _path="/json/info"
+$requestPath = $_GET['_path'] ?? ($_SERVER['REQUEST_URI'] ?? '/json');
+$path       = parse_url($requestPath, PHP_URL_PATH) ?? '/json';
 $path       = rtrim($path, '/') ?: '/json';
-// DEBUG: Log all request info to help troubleshoot rewrite issues
-error_log("[WLED Plugin DEBUG] REQUEST_URI=" . ($requestUri ?? 'NULL'));
-error_log("[WLED Plugin DEBUG] path=" . $path);
-error_log("[WLED Plugin DEBUG] REQUEST_METHOD=" . $method);
-error_log("[WLED Plugin DEBUG] SCRIPT_NAME=" . ($_SERVER['SCRIPT_NAME'] ?? 'NULL'));
-error_log("[WLED Plugin DEBUG] SCRIPT_FILENAME=" . ($_SERVER['SCRIPT_FILENAME'] ?? 'NULL'));
+
+// DEBUG: Log request info
+error_log("[WLED] REQUEST_URI=" . ($_SERVER['REQUEST_URI'] ?? 'NULL') . 
+          ", _path=" . ($_GET['_path'] ?? 'NULL') .
+          ", final path=" . $path);
 // Set JSON response headers
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
@@ -509,7 +509,6 @@ if ($path === '/json' || str_starts_with($path, '/json')) {
 }
 
 // ── Fallback ──────────────────────────────────────────────────────────────────
-error_log("[WLED Plugin DEBUG 404] No matching route found for path: " . $path);
-error_log("[WLED Plugin DEBUG 404] REQUEST_URI: " . ($_SERVER['REQUEST_URI'] ?? 'NULL'));
+error_log("[WLED 404] No route matched path='$path' (REQUEST_URI=" . $_SERVER['REQUEST_URI'] . ")");
 http_response_code(404);
 echo json_encode(['error' => 'Unknown WLED API path: ' . $path]);

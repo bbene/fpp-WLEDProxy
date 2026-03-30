@@ -7,11 +7,10 @@
     # Don't rewrite if it's a real file or directory
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d
+    
+    # Only match /json or /win paths
+    RewriteCond %{REQUEST_URI} ^/(json|win)
 
-    # WLED JSON API - route all /json/* requests to plugin handler
-    # REQUEST_URI is preserved by Apache and will contain the original path
-    RewriteRule ^json(/.*)?$ /plugin/fpp-WLEDProxy/wled_api.php [L,QSA]
-
-    # WLED HTTP Request API - route all /win* requests to plugin handler
-    RewriteRule ^win(/.*)?$ /plugin/fpp-WLEDProxy/wled_api.php [L,QSA]
+    # Rewrite to plugin handler, passing the original path as _path query param
+    RewriteRule ^(.+)$ /plugin/fpp-WLEDProxy/wled_api.php?_path=/$1 [L,QSA,PT]
 </IfModule>
