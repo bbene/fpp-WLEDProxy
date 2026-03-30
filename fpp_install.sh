@@ -53,7 +53,7 @@ if [ -f "${CONF_SRC}" ]; then
     echo "[${PLUGIN_NAME}] Installed lighttpd config: ${CONF_DEST}"
     # Validate and reload lighttpd
     if lighttpd -t -f /etc/lighttpd/lighttpd.conf 2>/dev/null; then
-        service lighttpd reload 2>/dev/null || true
+        systemctl reload lighttpd 2>/dev/null || service lighttpd reload 2>/dev/null || true
         echo "[${PLUGIN_NAME}] lighttpd reloaded."
     else
         echo "[${PLUGIN_NAME}] WARNING: lighttpd config test failed — check ${CONF_DEST}"
@@ -114,8 +114,11 @@ chown -R fpp:fpp "${PLUGIN_DIR}" 2>/dev/null || true
 chmod +x "${PLUGIN_DIR}/fpp_start.sh" 2>/dev/null || true
 chmod +x "${PLUGIN_DIR}/fpp_stop.sh"  2>/dev/null || true
 
+# ── 7. Restart lighttpd to ensure all configs are loaded ───────────────────────
+systemctl restart lighttpd 2>/dev/null || service lighttpd restart 2>/dev/null || true
+
 echo "[${PLUGIN_NAME}] Installation complete."
 echo "[${PLUGIN_NAME}] Next steps:"
 echo "   1. Go to FPP → Content Setup → Pixel Overlay Models and create a model."
 echo "   2. Visit FPP → Plugin Settings → WLED API Proxy to configure the model name."
-echo "   3. Restart FPP or enable the plugin to activate."
+echo "   3. Verify plugin is enabled and restart FPP if needed."
