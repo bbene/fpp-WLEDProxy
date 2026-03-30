@@ -1,0 +1,14 @@
+# FPP WLED API Proxy - Root Level Rewrite Rules
+# Routes WLED API requests to the plugin handler
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # WLED JSON API - route to plugin
+    RewriteCond %{REQUEST_URI} ^/json
+    RewriteRule ^json(.*)$ /plugin/fpp-WLEDProxy/wled_api.php [L,QSA]
+
+    # WLED HTTP Request API - route to plugin  
+    RewriteCond %{REQUEST_URI} ^/win
+    RewriteRule ^win(.*)$ /plugin/fpp-WLEDProxy/wled_api.php [L,QSA]
+</IfModule>
