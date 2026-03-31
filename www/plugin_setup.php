@@ -100,12 +100,12 @@ if (file_exists($stateFile)) {
         <?php if (!empty($overlayModels)): ?>
         <div style="border: 1px solid #ddd; padding: 10px; border-radius: 4px; max-height: 250px; overflow-y: auto;">
             <?php foreach ($overlayModels as $model): ?>
-            <div class="form-check">
+            <div style="margin: 0; padding: 0; margin-bottom: 8px;">
                 <input type="checkbox" id="model_<?= htmlspecialchars($model) ?>"
                        name="OverlayModelNames[]" value="<?= htmlspecialchars($model) ?>"
-                       class="form-check-input"
+                       class="form-check-input" style="margin-right: 8px;"
                        <?= in_array($model, $cfg['OverlayModelNames'] ?? []) ? 'checked' : '' ?>>
-                <label class="form-check-label" for="model_<?= htmlspecialchars($model) ?>">
+                <label class="form-check-label" for="model_<?= htmlspecialchars($model) ?>" style="display: inline; margin: 0;">
                     <?= htmlspecialchars($model) ?>
                 </label>
             </div>
