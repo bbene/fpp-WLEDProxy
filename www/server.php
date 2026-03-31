@@ -15,11 +15,16 @@
 
 error_reporting(E_ALL);
 ini_set('display_errors', 0);
+set_error_handler(function($errno, $errstr) {
+    fwrite(STDERR, "ERROR: [$errno] $errstr\n");
+});
+set_exception_handler(function($e) {
+    fwrite(STDERR, "EXCEPTION: " . $e->getMessage() . "\n");
+});
 
 // Configuration
 $PORT = 9000;
 $HOST = '0.0.0.0';
-$MAX_CLIENTS = 10;
 
 // Get the plugin directory
 $pluginDir = dirname(__DIR__);
@@ -38,14 +43,13 @@ if (!$socket) {
 }
 
 socket_set_option($socket, SOL_SOCKET, SO_REUSEADDR, 1);
-socket_set_option($socket, SOL_SOCKET, SO_REUSEPORT, 1);
 
 if (!socket_bind($socket, $HOST, $PORT)) {
     fwrite(STDERR, "ERROR: Failed to bind to {$HOST}:{$PORT}: " . socket_strerror(socket_last_error()) . "\n");
     exit(1);
 }
 
-if (!socket_listen($socket, $MAX_CLIENTS)) {
+if (!socket_listen($socket, 5)) {
     fwrite(STDERR, "ERROR: Failed to listen: " . socket_strerror(socket_last_error()) . "\n");
     exit(1);
 }
@@ -56,28 +60,62 @@ fwrite(STDOUT, "Press Ctrl+C to stop\n");
 
 // Handle signals gracefully
 $shutdown = false;
-pcntl_signal(SIGTERM, function() use (&$shutdown) { $shutdown = true; });
-pcntl_signal(SIGINT, function() use (&$shutdown) { $shutdown = true; });
+if (function_exists('pcntl_signal')) {
+    pcntl_signal(SIGTERM, function() use (&$shutdown) { $shutdown = true; });
+    pcntl_signal(SIGINT, function() use (&$shutdown) { $shutdown = true; });
+}
 
 // Main server loop
 while (!$shutdown) {
-    // Accept connection with timeout
-    socket_set_option($socket, SOL_SOCKET, SO_RCVTIMEO, ['sec' => 1, 'usec' => 0]);
-    $client = @socket_accept($socket);
+    $read = [$socket];
+    $write = null;
+    $except = null;
+    $tv_sec = 1; // 1 second timeout
 
+    if (function_exists('socket_select')) {
+        $num = socket_select($read, $write, $except, $tv_sec);
+        if ($num === false) {
+            fwrite(STDERR, "socket_select error\n");
+            break;
+        }
+        if ($num === 0) {
+            if (function_exists('pcntl_signal_dispatch')) {
+                pcntl_signal_dispatch();
+            }
+            continue;
+        }
+    }
+
+    $client = @socket_accept($socket);
     if ($client === false) {
-        pcntl_signal_dispatch();
         continue;
     }
 
-    // Read HTTP request
+    // Set non-blocking for client read
+    socket_set_nonblock($client);
+
+    // Read HTTP request with retry loop
     $request = '';
-    while (($chunk = @socket_read($client, 2048, PHP_NORMAL_READ)) && $chunk !== '') {
+    $attempts = 0;
+    while ($attempts < 100) {
+        $chunk = @socket_read($client, 4096);
+        if ($chunk === '') {
+            break;
+        }
+        if ($chunk === false) {
+            $attempts++;
+            usleep(1000);
+            continue;
+        }
         $request .= $chunk;
-        if (strpos($request, "\r\n\r\n") !== false) break;
+        if (strpos($request, "\r\n\r\n") !== false) {
+            break;
+        }
     }
 
-    if (!$request) {
+    socket_set_block($client);
+
+    if (empty($request)) {
         socket_close($client);
         continue;
     }
@@ -95,7 +133,6 @@ while (!$shutdown) {
 
     $method = $parts[0];
     $uri = $parts[1];
-    $version = $parts[2];
 
     // Parse headers
     $headers = [];
@@ -171,10 +208,9 @@ while (!$shutdown) {
     $statusCode = 200;
 
     try {
-        // Include and execute the API handler
         include $apiHandler;
         $statusCode = http_response_code() ?? 200;
-    } catch (Exception $e) {
+    } catch (Throwable $e) {
         $statusCode = 500;
         echo json_encode(['error' => $e->getMessage()]);
     }
@@ -183,8 +219,6 @@ while (!$shutdown) {
 
     // Build HTTP response
     $response = "HTTP/1.1 {$statusCode} " . getStatusText($statusCode) . "\r\n";
-
-    // Add default headers
     $response .= "Server: FPP-WLED-Proxy/1.0\r\n";
     $response .= "Content-Type: application/json\r\n";
     $response .= "Content-Length: " . strlen($output) . "\r\n";
@@ -195,22 +229,19 @@ while (!$shutdown) {
     $response .= $output;
 
     // Send response
-    socket_write($client, $response);
+    @socket_write($client, $response);
     socket_close($client);
 }
 
 socket_close($socket);
-syslog(LOG_INFO, "WLED API Server stopped");
 exit(0);
 
-// Helper function
 function getStatusText($code) {
-    $statuses = [
+    return [
         200 => 'OK',
         400 => 'Bad Request',
         404 => 'Not Found',
         405 => 'Method Not Allowed',
         500 => 'Internal Server Error',
-    ];
-    return $statuses[$code] ?? 'Unknown';
+    ][$code] ?? 'Unknown';
 }
