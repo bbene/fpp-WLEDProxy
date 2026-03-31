@@ -202,10 +202,10 @@ function loadState(): array {
 
     $merged = array_replace_recursive($default, $state);
 
-    // Convert segments array to object keyed by segment ID (required by wled library)
-    $segsByID = (object)[];
+    // Convert segments array to associative array keyed by segment ID (wled library expects object)
+    $segsByID = [];
     foreach ($merged['seg'] as $seg) {
-        $segsByID->{$seg['id']} = $seg;
+        $segsByID[(string)$seg['id']] = $seg;
     }
     $merged['seg'] = $segsByID;
 
