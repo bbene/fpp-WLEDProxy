@@ -64,6 +64,13 @@ if [ ! -L "${WEB_LINK}" ]; then
     echo "[${PLUGIN_NAME}] Created web symlink: ${WEB_LINK}"
 fi
 
+# ── 4b. Symlink plugin_setup.php in plugin root for FPP's setupScriptName ─────
+# FPP looks for setupScriptName files in the plugin root directory
+if [ ! -e "${PLUGIN_DIR}/plugin_setup.php" ]; then
+    ln -sf "www/plugin_setup.php" "${PLUGIN_DIR}/plugin_setup.php"
+    echo "[${PLUGIN_NAME}] Created setup script symlink: ${PLUGIN_DIR}/plugin_setup.php"
+fi
+
 # ── 5. Install systemd service ───────────────────────────────────────────────
 # The HTTP server runs on port 9000 via systemd service.
 SERVICE_DEST="/etc/systemd/system/fpp-wled-proxy.service"
