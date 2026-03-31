@@ -204,8 +204,16 @@ while (true) {
     $response .= "\r\n";
     $response .= $output;
 
-    // Send response
-    @socket_write($client, $response);
+    // Send response - handle partial writes
+    $totalLen = strlen($response);
+    $sent = 0;
+    while ($sent < $totalLen) {
+        $bytesWritten = @socket_write($client, substr($response, $sent));
+        if ($bytesWritten === false || $bytesWritten === 0) {
+            break;
+        }
+        $sent += $bytesWritten;
+    }
     socket_close($client);
 }
 
