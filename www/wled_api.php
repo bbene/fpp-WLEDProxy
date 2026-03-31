@@ -417,6 +417,10 @@ function buildInfoJson(array $cfg, array $state, int $fxcount, int $palcount): a
         'lwip'     => 0,
         'mac'      => $mac,
         'ip'       => $_SERVER['SERVER_ADDR'] ?? '',
+        'filesystem' => [
+            'u' => 0,
+            't' => 1024,
+        ],
     ];
 }
 
