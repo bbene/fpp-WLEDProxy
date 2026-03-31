@@ -6,6 +6,13 @@
  * Accessed via: /plugin.php?plugin=fpp-WLEDProxy&page=plugin_setup.php
  */
 
+// Redirect to wrapper if accessed directly (not included by plugin.php)
+// Check for FPP's common.php which would have been required by plugin.php
+if (!function_exists('LoadPluginSettings')) {
+    header('Location: /plugin.php?plugin=fpp-WLEDProxy&page=plugin_setup.php', true, 302);
+    exit;
+}
+
 define('CONFIG_FILE', '/home/fpp/media/config/plugin.fpp-WLEDProxy.json');
 
 // ── Load config ───────────────────────────────────────────────────────────────
