@@ -70,10 +70,10 @@ SERVICE_DEST="/etc/systemd/system/fpp-wled-proxy.service"
 SERVICE_SRC="${PLUGIN_DIR}/systemd/fpp-wled-proxy.service"
 
 if [ -f "${SERVICE_SRC}" ]; then
-    cp "${SERVICE_SRC}" "${SERVICE_DEST}"
-    chmod 644 "${SERVICE_DEST}"
-    systemctl daemon-reload
-    systemctl enable fpp-wled-proxy 2>/dev/null || true
+    sudo cp "${SERVICE_SRC}" "${SERVICE_DEST}"
+    sudo chmod 644 "${SERVICE_DEST}"
+    sudo systemctl daemon-reload
+    sudo systemctl enable fpp-wled-proxy 2>/dev/null || true
     echo "[${PLUGIN_NAME}] Installed systemd service: fpp-wled-proxy"
 else
     echo "[${PLUGIN_NAME}] WARNING: systemd service file not found at ${SERVICE_SRC}"
