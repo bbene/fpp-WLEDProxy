@@ -200,7 +200,16 @@ function loadState(): array {
     $state['seg'] = $segments;
     $state['on'] = $deviceOn;
 
-    return array_replace_recursive($default, $state);
+    $merged = array_replace_recursive($default, $state);
+
+    // Convert segments array to object keyed by segment ID (required by wled library)
+    $segsByID = (object)[];
+    foreach ($merged['seg'] as $seg) {
+        $segsByID->{$seg['id']} = $seg;
+    }
+    $merged['seg'] = $segsByID;
+
+    return $merged;
 }
 
 /**
