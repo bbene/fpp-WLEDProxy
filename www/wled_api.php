@@ -564,6 +564,41 @@ if ($path === '/json/fxdata') {
     exit;
 }
 
+// GET /json/cfg - Device configuration
+if ($path === '/json/cfg') {
+    $state = loadState();
+    $totalLeds = 0;
+    foreach ($state['seg'] ?? [] as $seg) {
+        $totalLeds = max($totalLeds, $seg['stop'] ?? 0);
+    }
+    $cfg_response = [
+        'hw' => [
+            'led' => [
+                'count'       => $totalLeds ?: 300,
+                'rgbw'        => false,
+                'wleds'       => 0,
+                'lc'          => 0,
+                'skips'       => [],
+                'type'        => 2,  // APA102
+                'freq'        => 1000000,
+                'maxpwr'      => 0,
+                'maxcur'      => [0],
+                'ports'       => 1,
+            ],
+            'bus'       => [],
+            'status'    => [
+                'pwm'     => [0],
+                'heapfrags' => 0,
+                'fs'      => ['u' => 0, 't' => 1024],
+            ],
+            'phyllo'    => 0,
+        ],
+        'um' => [],  // User modules
+    ];
+    echo json_encode($cfg_response);
+    exit;
+}
+
 // GET /json/nodes — multi-device support (not implemented)
 if ($path === '/json/nodes') {
     echo json_encode(['nodes' => []]);
@@ -620,7 +655,8 @@ if ($path === '/json/si') {
 }
 
 // GET /json — combined state + info (default WLED response)
-if ($path === '/json' || str_starts_with($path, '/json')) {
+// Also supports /api/json as alternate path
+if ($path === '/json' || $path === '/api/json' || str_starts_with($path, '/json')) {
     if ($method === 'POST' && !empty($inputBody)) {
         $state = mergeState($state, $inputBody);
         saveState($state);
