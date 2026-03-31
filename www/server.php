@@ -59,166 +59,165 @@ fwrite(STDOUT, "Logging to syslog (journalctl -u fpp-wled-proxy -f)\n");
 fwrite(STDOUT, "Press Ctrl+C to stop\n");
 
 // Main server loop - systemd will handle shutdown via SIGTERM/SIGKILL
-while (true) {
-    $read = [$socket];
-    $write = null;
-    $except = null;
-
-    // Use non-blocking accept with a small timeout
-    socket_set_nonblock($socket);
-    $client = @socket_accept($socket);
-
-    if ($client === false) {
-        usleep(10000); // 10ms sleep when no connection
-        continue;
-    }
-
-    socket_set_block($socket);
-
-    // Read HTTP request
-    $request = '';
-    socket_set_block($client);
-
-    // Read until we have the full headers
+try {
     while (true) {
-        $chunk = @socket_read($client, 4096);
-        if ($chunk === '' || $chunk === false) {
-            break;
+        // Use non-blocking accept with a small timeout
+        socket_set_nonblock($socket);
+        $client = @socket_accept($socket);
+
+        if ($client === false) {
+            usleep(10000); // 10ms sleep when no connection
+            continue;
         }
-        $request .= $chunk;
-        if (strpos($request, "\r\n\r\n") !== false) {
-            break;
-        }
-    }
 
-    if (empty($request)) {
-        socket_close($client);
-        continue;
-    }
+        socket_set_block($client);
 
-    // Parse request line
-    $lines = explode("\r\n", $request);
-    $requestLine = $lines[0];
-    $parts = explode(' ', $requestLine);
+        // Read HTTP request
+        $request = '';
 
-    if (count($parts) < 3) {
-        socket_write($client, "HTTP/1.1 400 Bad Request\r\n\r\n");
-        socket_close($client);
-        continue;
-    }
-
-    $method = $parts[0];
-    $uri = $parts[1];
-
-    // Parse headers
-    $headers = [];
-    for ($i = 1; $i < count($lines) && $lines[$i] !== ''; $i++) {
-        if (strpos($lines[$i], ':') !== false) {
-            [$key, $val] = explode(':', $lines[$i], 2);
-            $headers[trim(strtolower($key))] = trim($val);
-        }
-    }
-
-    // Parse URL
-    $url_parts = parse_url($uri);
-    $path = $url_parts['path'] ?? '/';
-    $query_string = $url_parts['query'] ?? '';
-
-    // Extract POST body if present
-    $body = '';
-    if ($method === 'POST' && isset($headers['content-length'])) {
-        $bodyLen = (int)$headers['content-length'];
-        $bodyLen = min($bodyLen, 65536); // Limit to 64KB
-        $body = @socket_read($client, $bodyLen, PHP_BINARY_READ);
-    }
-
-    // Set up PHP environment to emulate HTTP request
-    $_SERVER = [
-        'REQUEST_METHOD'  => $method,
-        'REQUEST_URI'     => $path . ($query_string ? "?{$query_string}" : ''),
-        'SCRIPT_NAME'     => '/wled_api.php',
-        'SCRIPT_FILENAME' => $apiHandler,
-        'QUERY_STRING'    => $query_string,
-        'SERVER_NAME'     => gethostname(),
-        'SERVER_ADDR'     => $HOST,
-        'SERVER_PORT'     => $PORT,
-        'SERVER_PROTOCOL' => 'HTTP/1.1',
-        'HTTP_HOST'       => $headers['host'] ?? (gethostname() . ':' . $PORT),
-        'REMOTE_ADDR'     => '127.0.0.1',
-        'REMOTE_PORT'     => 0,
-    ];
-
-    // Add other headers to $_SERVER
-    foreach ($headers as $key => $value) {
-        $key = 'HTTP_' . strtoupper(str_replace('-', '_', $key));
-        if (!isset($_SERVER[$key])) {
-            $_SERVER[$key] = $value;
-        }
-    }
-
-    // Parse query string into $_GET
-    $_GET = [];
-    if ($query_string) {
-        parse_str($query_string, $_GET);
-    }
-
-    // Parse POST data into $_POST
-    $_POST = [];
-    $_REQUEST = [];
-    if ($method === 'POST') {
-        if (isset($headers['content-type'])) {
-            $contentType = explode(';', $headers['content-type'])[0];
-            if ($contentType === 'application/x-www-form-urlencoded') {
-                parse_str($body, $_POST);
-            } elseif ($contentType === 'application/json') {
-                $_POST = json_decode($body, true) ?? [];
+        // Read until we have the full headers
+        while (true) {
+            $chunk = @socket_read($client, 4096);
+            if ($chunk === '' || $chunk === false) {
+                break;
+            }
+            $request .= $chunk;
+            if (strpos($request, "\r\n\r\n") !== false) {
+                break;
             }
         }
-        $_REQUEST = array_merge($_GET, $_POST);
-    } else {
-        $_REQUEST = $_GET;
-    }
 
-    // Capture output
-    ob_start();
-    $statusCode = 200;
-
-    try {
-        include $apiHandler;
-        $statusCode = http_response_code() ?? 200;
-    } catch (Throwable $e) {
-        $statusCode = 500;
-        echo json_encode(['error' => $e->getMessage()]);
-    }
-
-    $output = ob_get_clean();
-
-    // Build HTTP response
-    $response = "HTTP/1.1 {$statusCode} " . getStatusText($statusCode) . "\r\n";
-    $response .= "Server: FPP-WLED-Proxy/1.0\r\n";
-    $response .= "Content-Type: application/json\r\n";
-    $response .= "Content-Length: " . strlen($output) . "\r\n";
-    $response .= "Connection: close\r\n";
-    $response .= "Access-Control-Allow-Origin: *\r\n";
-    $response .= "Access-Control-Allow-Methods: GET, POST, OPTIONS\r\n";
-    $response .= "\r\n";
-    $response .= $output;
-
-    // Send response - handle partial writes
-    $totalLen = strlen($response);
-    $sent = 0;
-    while ($sent < $totalLen) {
-        $bytesWritten = @socket_write($client, substr($response, $sent));
-        if ($bytesWritten === false || $bytesWritten === 0) {
-            break;
+        if (empty($request)) {
+            socket_close($client);
+            continue;
         }
-        $sent += $bytesWritten;
+
+        // Parse request line
+        $lines = explode("\r\n", $request);
+        $requestLine = $lines[0];
+        $parts = explode(' ', $requestLine);
+
+        if (count($parts) < 3) {
+            socket_write($client, "HTTP/1.1 400 Bad Request\r\n\r\n");
+            socket_close($client);
+            continue;
+        }
+
+        $method = $parts[0];
+        $uri = $parts[1];
+
+        // Parse headers
+        $headers = [];
+        for ($i = 1; $i < count($lines) && $lines[$i] !== ''; $i++) {
+            if (strpos($lines[$i], ':') !== false) {
+                [$key, $val] = explode(':', $lines[$i], 2);
+                $headers[trim(strtolower($key))] = trim($val);
+            }
+        }
+
+        // Parse URL
+        $url_parts = parse_url($uri);
+        $path = $url_parts['path'] ?? '/';
+        $query_string = $url_parts['query'] ?? '';
+
+        // Extract POST body if present
+        $body = '';
+        if ($method === 'POST' && isset($headers['content-length'])) {
+            $bodyLen = (int)$headers['content-length'];
+            $bodyLen = min($bodyLen, 65536); // Limit to 64KB
+            $body = @socket_read($client, $bodyLen, PHP_BINARY_READ);
+        }
+
+        // Set up PHP environment to emulate HTTP request
+        $_SERVER = [
+            'REQUEST_METHOD'  => $method,
+            'REQUEST_URI'     => $path . ($query_string ? "?{$query_string}" : ''),
+            'SCRIPT_NAME'     => '/wled_api.php',
+            'SCRIPT_FILENAME' => $apiHandler,
+            'QUERY_STRING'    => $query_string,
+            'SERVER_NAME'     => gethostname(),
+            'SERVER_ADDR'     => $HOST,
+            'SERVER_PORT'     => $PORT,
+            'SERVER_PROTOCOL' => 'HTTP/1.1',
+            'HTTP_HOST'       => $headers['host'] ?? (gethostname() . ':' . $PORT),
+            'REMOTE_ADDR'     => '127.0.0.1',
+            'REMOTE_PORT'     => 0,
+        ];
+
+        // Add other headers to $_SERVER
+        foreach ($headers as $key => $value) {
+            $key = 'HTTP_' . strtoupper(str_replace('-', '_', $key));
+            if (!isset($_SERVER[$key])) {
+                $_SERVER[$key] = $value;
+            }
+        }
+
+        // Parse query string into $_GET
+        $_GET = [];
+        if ($query_string) {
+            parse_str($query_string, $_GET);
+        }
+
+        // Parse POST data into $_POST
+        $_POST = [];
+        $_REQUEST = [];
+        if ($method === 'POST') {
+            if (isset($headers['content-type'])) {
+                $contentType = explode(';', $headers['content-type'])[0];
+                if ($contentType === 'application/x-www-form-urlencoded') {
+                    parse_str($body, $_POST);
+                } elseif ($contentType === 'application/json') {
+                    $_POST = json_decode($body, true) ?? [];
+                }
+            }
+            $_REQUEST = array_merge($_GET, $_POST);
+        } else {
+            $_REQUEST = $_GET;
+        }
+
+        // Capture output
+        ob_start();
+        $statusCode = 200;
+
+        try {
+            include $apiHandler;
+            $statusCode = http_response_code() ?? 200;
+        } catch (Throwable $e) {
+            $statusCode = 500;
+            echo json_encode(['error' => $e->getMessage()]);
+        }
+
+        $output = ob_get_clean();
+
+        // Build HTTP response
+        $response = "HTTP/1.1 {$statusCode} " . getStatusText($statusCode) . "\r\n";
+        $response .= "Server: FPP-WLED-Proxy/1.0\r\n";
+        $response .= "Content-Type: application/json\r\n";
+        $response .= "Content-Length: " . strlen($output) . "\r\n";
+        $response .= "Connection: close\r\n";
+        $response .= "Access-Control-Allow-Origin: *\r\n";
+        $response .= "Access-Control-Allow-Methods: GET, POST, OPTIONS\r\n";
+        $response .= "\r\n";
+        $response .= $output;
+
+        // Send response - handle partial writes
+        $totalLen = strlen($response);
+        $sent = 0;
+        while ($sent < $totalLen) {
+            $bytesWritten = @socket_write($client, substr($response, $sent));
+            if ($bytesWritten === false || $bytesWritten === 0) {
+                break;
+            }
+            $sent += $bytesWritten;
+        }
+        socket_close($client);
     }
-    socket_close($client);
+} catch (Throwable $e) {
+    fwrite(STDERR, "FATAL: " . $e->getMessage() . " at " . $e->getFile() . ":" . $e->getLine() . "\n");
+    usleep(500000); // Wait 500ms before retrying
 }
 
 socket_close($socket);
-exit(0);
 
 function getStatusText($code) {
     return [
