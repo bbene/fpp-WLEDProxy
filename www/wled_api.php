@@ -551,6 +551,19 @@ if ($path === '/json/palettes' || $path === '/json/pal') {
     exit;
 }
 
+// GET /json/fxdata - Effect metadata (WLED v0.14+)
+if ($path === '/json/fxdata') {
+    $fxdata = [];
+    foreach ($WLED_EFFECTS as $idx => $name) {
+        $fxdata[] = [
+            'name' => $name,
+            'flags' => 0,  // Bitfield for effect properties
+        ];
+    }
+    echo json_encode($fxdata);
+    exit;
+}
+
 // GET /json/nodes — multi-device support (not implemented)
 if ($path === '/json/nodes') {
     echo json_encode(['nodes' => []]);
