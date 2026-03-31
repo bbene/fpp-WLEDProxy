@@ -403,7 +403,7 @@ function buildInfoJson(array $cfg, array $state, int $fxcount, int $palcount): a
             'rgbw'   => false,
             'wv'     => false,
             'lc'     => 0,
-            'seglc'  => 0,
+            'seglc'  => array_fill(0, count($state['seg'] ?? [1]), 0),  // array of segment light capabilities
         ],
         'str'      => false,
         'name'     => $cfg['DeviceName'],
