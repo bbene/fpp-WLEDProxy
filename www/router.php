@@ -2,18 +2,13 @@
 /**
  * FPP WLED API Proxy — PHP Built-in Server Router
  *
- * Routes API requests to wled_api.php
- * Serves plugin_setup.php directly for settings page
+ * Routes all API requests to wled_api.php
  * Used by: php -S 0.0.0.0:9000 router.php
+ *
+ * Note: plugin_setup.php is served by FPP's web server, not this router.
  */
 
 $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
-
-// Serve plugin_setup.php directly (it's in the parent directory)
-if ($path === '/plugin_setup.php') {
-    require __DIR__ . '/../plugin_setup.php';
-    return;
-}
 
 // Let the built-in server serve actual files (CSS, JS, images, etc.)
 $requested = __DIR__ . $path;
