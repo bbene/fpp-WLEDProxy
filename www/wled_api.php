@@ -605,6 +605,19 @@ if ($path === '/json/nodes') {
     exit;
 }
 
+// GET /presets.json — saved presets/profiles (WLED compatibility)
+if ($path === '/presets.json') {
+    // Return empty presets object - we don't have preset storage in FPP
+    echo json_encode([
+        '0' => [
+            'n' => 'Default',
+            'p' => 1,
+            'ql' => 255,
+        ],
+    ]);
+    exit;
+}
+
 // GET /json/info
 if ($path === '/json/info') {
     $state = loadState();
