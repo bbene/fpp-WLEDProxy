@@ -61,15 +61,36 @@ Based on wled.models.Info dataclass, ALL of these fields are required:
 - `u`: used space (in bytes)
 - `t`: total space (in bytes)
 
-## State Object Schema
+## State Object Schema (COMPLETE)
+
+ALL of these fields are required by the wled library:
 
 ```json
 {
   "on": boolean,
-  "bri": number (0-255),
-  "transition": number (milliseconds, in 100ms increments),
-  "ps": number,
-  "mainseg": number,
+  "bri": number (1-255),
+  "transition": number (0-65535, in 100ms increments),
+  "ps": number (-1 to 250, preset ID),
+  "pl": number (-1 to 250, playlist ID),
+  "mainseg": number (0 to maxseg-1),
+  "time": number (unix timestamp),
+  "tb": number (effect timebase),
+  "lor": number (0, 1, or 2 - live data override),
+  "live": boolean,
+  "nightlight": {
+    "on": boolean,
+    "dur": number (1-255),
+    "mode": number (0-3),
+    "tbri": number (0-255, target brightness),
+    "rem": number (-1 to 15300, remaining time)
+  },
+  "udpn": {
+    "send": boolean,
+    "recv": boolean,
+    "sgrp": number (0-255),
+    "rgrp": number (0-255),
+    "nn": boolean
+  },
   "seg": [
     {
       "id": number,
@@ -79,8 +100,8 @@ Based on wled.models.Info dataclass, ALL of these fields are required:
       "grp": number,
       "spc": number,
       "fx": number,
-      "sx": number,
-      "ix": number,
+      "sx": number (0-255),
+      "ix": number (0-255),
       "pal": number,
       "sel": boolean,
       "rev": boolean,
