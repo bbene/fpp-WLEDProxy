@@ -6,10 +6,13 @@
  * Used by: php -S 0.0.0.0:9000 router.php
  */
 
-// Don't process actual files/directories, let the server handle them
-if (is_file($_SERVER["SCRIPT_FILENAME"])) {
-    return false;
+// Let the built-in server serve actual files (CSS, JS, images, etc.)
+$requested = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+$requested = __DIR__ . $requested;
+
+if ($requested !== __DIR__ . '/router.php' && is_file($requested)) {
+    return false; // Let built-in server serve the file
 }
 
-// Route everything to wled_api.php
-require_once __DIR__ . '/wled_api.php';
+// Route everything else to wled_api.php
+require __DIR__ . '/wled_api.php';
