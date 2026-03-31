@@ -73,10 +73,18 @@ while (!$shutdown) {
     $tv_sec = 1; // 1 second timeout
 
     if (function_exists('socket_select')) {
-        $num = socket_select($read, $write, $except, $tv_sec);
+        $num = @socket_select($read, $write, $except, $tv_sec);
         if ($num === false) {
-            fwrite(STDERR, "socket_select error\n");
-            break;
+            $err = socket_last_error();
+            // EINTR = 4 (Interrupted system call) - retry instead of breaking
+            if ($err != 4) {
+                fwrite(STDERR, "socket_select error: $err\n");
+                break;
+            }
+            if (function_exists('pcntl_signal_dispatch')) {
+                pcntl_signal_dispatch();
+            }
+            continue;
         }
         if ($num === 0) {
             if (function_exists('pcntl_signal_dispatch')) {
