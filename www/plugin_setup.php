@@ -2,23 +2,9 @@
 /**
  * FPP WLED API Proxy — Plugin Settings Page
  *
- * Content block that FPP's plugin.php wrapper includes with header and footer.
- * Can be accessed directly at: /plugin/fpp-WLEDProxy/plugin_setup.php
- * Or via wrapper at: /plugin.php?plugin=fpp-WLEDProxy&page=plugin_setup.php
+ * Content block included by FPP's plugin.php wrapper.
+ * Accessed via: /plugin.php?plugin=fpp-WLEDProxy&page=plugin_setup.php
  */
-
-// If accessed directly (not via plugin.php wrapper), redirect to the wrapper
-// Check if FPP's plugin.php context exists (pageContent would be set or specific FPP variables)
-if (!defined('FPP_PLUGIN_INCLUDED')) {
-    define('FPP_PLUGIN_INCLUDED', false);
-}
-
-// Redirect to plugin.php wrapper if not already being included by it
-// We detect this by checking if standard FPP settings variable is available
-if (!isset($settings) && php_sapi_name() !== 'cli') {
-    header('Location: /plugin.php?plugin=fpp-WLEDProxy&page=plugin_setup.php');
-    exit;
-}
 
 define('CONFIG_FILE', '/home/fpp/media/config/plugin.fpp-WLEDProxy.json');
 
@@ -80,42 +66,6 @@ if (file_exists($stateFile)) {
 }
 
 ?>
-
-<style>
-        * { box-sizing: border-box; }
-        body        { font-family: Arial, sans-serif; max-width: 820px; margin: 0 auto; padding: 16px; background: #f5f5f5; }
-        h1          { color: #333; margin-top: 0; }
-        h2          { color: #555; font-size: 1.1em; margin-top: 1.6em; }
-        .card       { background: #f8f8f8; border: 1px solid #ddd; border-radius: 6px;
-                      padding: 16px 20px; margin-bottom: 16px; }
-        label       { display: block; font-weight: bold; margin-top: 12px; margin-bottom: 4px; }
-        input[type=text], input[type=number], select {
-                      width: 100%; max-width: 400px; padding: 7px 10px;
-                      border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
-        .checkbox-row { display: flex; align-items: center; gap: 10px; margin-top: 12px; }
-        input[type=submit] {
-                      margin-top: 16px; padding: 9px 24px; background: #4a90d9;
-                      color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 1em; }
-        input[type=submit]:hover { background: #357abf; }
-        .alert-ok   { background: #d4edda; border: 1px solid #c3e6cb; color: #155724;
-                      border-radius: 4px; padding: 10px 16px; margin-bottom: 12px; }
-        .alert-err  { background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24;
-                      border-radius: 4px; padding: 10px 16px; margin-bottom: 12px; }
-        .state-row  { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 8px; }
-        .state-badge { background: #e0e0e0; border-radius: 4px; padding: 4px 10px;
-                       font-size: 0.9em; font-family: monospace; }
-        .state-badge.on  { background: #c3e6cb; color: #155724; }
-        .state-badge.off { background: #f5c6cb; color: #721c24; }
-        small       { color: #777; display: block; margin-top: 3px; }
-        code        { background: #eee; padding: 2px 6px; border-radius: 3px; font-size: 0.9em; }
-        table       { border-collapse: collapse; width: 100%; margin-top: 8px; }
-        th, td      { border: 1px solid #ddd; padding: 6px 10px; text-align: left; font-size: 0.9em; }
-        th          { background: #f0f0f0; }
-    </style>
-
-<div style="text-align: right; margin-bottom: 16px;">
-    <a href="/" style="font-size: 0.9em; text-decoration: none; color: #0066cc;">← Back to FPP</a>
-</div>
 
 <h1>🌈 FPP WLED API Proxy</h1>
 <p>Makes FPP discoverable and controllable by any WLED-compatible app
