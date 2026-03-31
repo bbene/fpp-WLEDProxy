@@ -68,19 +68,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     $cfg['DeviceName']         = trim($_POST['DeviceName'] ?? $defaults['DeviceName']);
     $cfg['EnableUDPDiscovery'] = isset($_POST['EnableUDPDiscovery']);
 
-    // Infer LED count from selected models (use the max if multiple models have different counts)
-    // modelPixelCounts is now populated from the API fetch above
-    $ledCounts = [];
+    // Store pixel count map for each model so WLED API can generate segments
+    $modelPixelCountsMap = [];
     foreach ($cfg['OverlayModelNames'] as $model) {
         if (isset($modelPixelCounts[$model])) {
-            $ledCounts[] = $modelPixelCounts[$model];
+            $modelPixelCountsMap[$model] = $modelPixelCounts[$model];
         }
     }
-    if (!empty($ledCounts)) {
-        $cfg['LEDCount'] = max($ledCounts);
-    } else {
-        // Fallback if we couldn't determine from models
-        $cfg['LEDCount'] = 300;
+    if (!empty($modelPixelCountsMap)) {
+        $cfg['ModelPixelCounts'] = $modelPixelCountsMap;
     }
 
     if (file_put_contents(CONFIG_FILE, json_encode($cfg, JSON_PRETTY_PRINT)) !== false) {
@@ -146,17 +142,6 @@ if (file_exists($stateFile)) {
         <?php endif; ?>
         </div>
 
-        <div class="mb-3">
-        <label class="form-label">Total LED / Pixel Count</label>
-        <div class="form-control" style="background-color: #f5f5f5; border-color: #ddd; color: #666;">
-            <?php
-            $inferredCount = $cfg['LEDCount'] ?? 300;
-            echo "Maximum pixels from selected models: <strong>" . (int)$inferredCount . "</strong>";
-            ?>
-        </div>
-        <small class="form-text d-block mt-2">Pixel count is automatically inferred from your selected overlay models
-               and reported to WLED apps for proper segment slider display.</small>
-        </div>
 
         <div class="mb-3">
         <label for="DeviceName" class="form-label">Device Name (shown in WLED apps)</label>

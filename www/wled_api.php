@@ -105,26 +105,73 @@ $WLED_PALETTES = [
 
 // ── State helpers ─────────────────────────────────────────────────────────────
 
+function buildSegments(array $cfg): array {
+    // Build WLED segments - one per selected model
+    $segments = [];
+    $modelNames = $cfg['OverlayModelNames'] ?? ['All Pixels'];
+    if (!is_array($modelNames)) $modelNames = [$modelNames];
+
+    $modelPixelCounts = $cfg['ModelPixelCounts'] ?? [];
+    $currentPos = 0;
+
+    foreach ($modelNames as $idx => $modelName) {
+        $pixelCount = $modelPixelCounts[$modelName] ?? 300;
+        $segments[] = [
+            'id'    => $idx,
+            'start' => $currentPos,
+            'stop'  => $currentPos + $pixelCount,
+            'len'   => $pixelCount,
+            'grp'   => 1,
+            'spc'   => 0,
+            'fx'    => 0,
+            'sx'    => 128,
+            'ix'    => 128,
+            'pal'   => 0,
+            'sel'   => ($idx === 0),
+            'rev'   => false,
+            'on'    => true,
+            'bri'   => 255,
+            'col'   => [[255,0,0],[0,0,0],[0,0,0]],
+        ];
+        $currentPos += $pixelCount;
+    }
+
+    return !empty($segments) ? $segments : [[
+        'id'  => 0, 'start' => 0, 'stop' => 300, 'len' => 300,
+        'grp' => 1, 'spc'   => 0,
+        'fx'  => 0, 'sx'    => 128, 'ix'  => 128, 'pal' => 0,
+        'sel' => true, 'rev' => false, 'on' => true, 'bri' => 255,
+        'col' => [[255,0,0],[0,0,0],[0,0,0]],
+    ]];
+}
+
 function loadState(): array {
+    $cfg = loadConfig();
+    $segments = buildSegments($cfg);
+
+    // Calculate total LED count from all segments
+    $totalLeds = 0;
+    foreach ($segments as $seg) {
+        $totalLeds = max($totalLeds, $seg['stop']);
+    }
+
     $default = [
         'on'         => true,
         'bri'        => 255,
         'transition' => 7,
         'ps'         => -1,
         'mainseg'    => 0,
-        'seg'        => [[
-            'id'  => 0, 'start' => 0, 'stop' => 300, 'len' => 300,
-            'grp' => 1, 'spc'   => 0,
-            'fx'  => 0, 'sx'    => 128, 'ix'  => 128, 'pal' => 0,
-            'sel' => true, 'rev' => false, 'on' => true, 'bri' => 255,
-            'col' => [[255,0,0],[0,0,0],[0,0,0]],
-        ]],
+        'seg'        => $segments,
     ];
 
     if (!file_exists(STATE_FILE)) return $default;
     $raw   = file_get_contents(STATE_FILE);
     $state = json_decode($raw, true);
-    return is_array($state) ? array_replace_recursive($default, $state) : $default;
+    if (!is_array($state)) return $default;
+
+    // Preserve segments structure from config
+    $state['seg'] = $segments;
+    return array_replace_recursive($default, $state);
 }
 
 function saveState(array $state): void {
@@ -296,7 +343,7 @@ function applyStateToFPP(array $state, array $cfg, array $effects, array $palett
 
 // ── Info JSON builder ─────────────────────────────────────────────────────────
 
-function buildInfoJson(array $cfg, int $fxcount, int $palcount): array {
+function buildInfoJson(array $cfg, array $state, int $fxcount, int $palcount): array {
     // Retrieve MAC address (best-effort)
     $mac = 'AA:BB:CC:DD:EE:FF';
     if (is_readable('/sys/class/net/eth0/address')) {
@@ -305,17 +352,24 @@ function buildInfoJson(array $cfg, int $fxcount, int $palcount): array {
         $mac = strtoupper(trim(file_get_contents('/sys/class/net/wlan0/address')));
     }
 
+    // Calculate total LED count from segments
+    $totalLeds = 0;
+    foreach ($state['seg'] ?? [] as $seg) {
+        $totalLeds = max($totalLeds, $seg['stop'] ?? 0);
+    }
+    if ($totalLeds === 0) $totalLeds = 300; // Fallback
+
     return [
         'ver'      => '0.14.0',
         'vid'      => 2110050,
         'leds'     => [
-            'count'  => (int)$cfg['LEDCount'],
+            'count'  => $totalLeds,
             'rgbw'   => false,
             'wleds'  => 0,
             'fps'    => 30,
             'pwr'    => 0,
             'maxpwr' => 0,
-            'maxseg' => 1,
+            'maxseg' => count($state['seg'] ?? []),
         ],
         'str'      => false,
         'name'     => $cfg['DeviceName'],
@@ -474,7 +528,8 @@ if ($path === '/json/nodes') {
 
 // GET /json/info
 if ($path === '/json/info') {
-    echo json_encode(buildInfoJson($cfg, count($WLED_EFFECTS), count($WLED_PALETTES)));
+    $state = loadState();
+    echo json_encode(buildInfoJson($cfg, $state, count($WLED_EFFECTS), count($WLED_PALETTES)));
     exit;
 }
 
