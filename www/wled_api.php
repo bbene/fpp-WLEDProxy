@@ -624,6 +624,7 @@ if ($path === '/json' || str_starts_with($path, '/json')) {
 }
 
 // ── Fallback ──────────────────────────────────────────────────────────────────
-error_log("[WLED 404] No route matched path='$path' (REQUEST_URI=" . $_SERVER['REQUEST_URI'] . ")");
+error_log("[WLED 404] No route matched path='$path' (REQUEST_URI=" . $_SERVER['REQUEST_URI'] . ", METHOD=" . $method . ")");
 http_response_code(404);
+header('Content-Type: application/json');
 echo json_encode(['error' => 'Unknown WLED API path: ' . $path]);
