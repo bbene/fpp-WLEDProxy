@@ -2,13 +2,21 @@
 /**
  * FPP WLED API Proxy — Plugin Settings Page
  *
- * Accessible in FPP at:  Content Setup → Plugins → WLED API Proxy → Settings
- * (Or directly at /plugin/fpp-WLEDProxy/plugin_setup.php)
+ * Content block that FPP's plugin.php wrapper includes with header and footer.
+ * Can be accessed directly at: /plugin/fpp-WLEDProxy/plugin_setup.php
+ * Or via wrapper at: /plugin.php?plugin=fpp-WLEDProxy&page=plugin_setup.php
  */
 
-// Redirect to plugin.php wrapper so we get FPP's header and footer
-if (!isset($_GET['wrapped'])) {
-    header('Location: /plugin.php?plugin=fpp-WLEDProxy&page=plugin_setup.php&wrapped=1');
+// If accessed directly (not via plugin.php wrapper), redirect to the wrapper
+// Check if FPP's plugin.php context exists (pageContent would be set or specific FPP variables)
+if (!defined('FPP_PLUGIN_INCLUDED')) {
+    define('FPP_PLUGIN_INCLUDED', false);
+}
+
+// Redirect to plugin.php wrapper if not already being included by it
+// We detect this by checking if standard FPP settings variable is available
+if (!isset($settings) && php_sapi_name() !== 'cli') {
+    header('Location: /plugin.php?plugin=fpp-WLEDProxy&page=plugin_setup.php');
     exit;
 }
 
