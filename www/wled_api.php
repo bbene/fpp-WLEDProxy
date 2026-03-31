@@ -33,7 +33,7 @@ define('FPP_API_BASE', 'http://localhost');   // FPP internal API base URL
 
 function loadConfig(): array {
     $defaults = [
-        'OverlayModelName'   => 'All Pixels',
+        'OverlayModelNames'  => ['All Pixels'],
         'LEDCount'           => 300,
         'DeviceName'         => 'FPP WLED',
         'EnableUDPDiscovery' => true,
@@ -41,7 +41,15 @@ function loadConfig(): array {
     if (!file_exists(CONFIG_FILE)) return $defaults;
     $raw = file_get_contents(CONFIG_FILE);
     $cfg = json_decode($raw, true);
-    return is_array($cfg) ? array_merge($defaults, $cfg) : $defaults;
+    if (!is_array($cfg)) return $defaults;
+
+    // Handle legacy single model name by converting to array
+    if (isset($cfg['OverlayModelName']) && !isset($cfg['OverlayModelNames'])) {
+        $cfg['OverlayModelNames'] = [$cfg['OverlayModelName']];
+        unset($cfg['OverlayModelName']);
+    }
+
+    return array_merge($defaults, $cfg);
 }
 
 $cfg = loadConfig();
@@ -188,7 +196,7 @@ function callFppApi(string $method, string $path, array $body = []): ?array {
 }
 
 /**
- * Apply the current WLED state to FPP's pixel overlay model.
+ * Apply the current WLED state to FPP's pixel overlay models.
  *
  * FPP Overlay Model API paths (FPP 6.x – 9.x):
  *   POST /api/overlays/model/{name}/state       — enable/disable model
@@ -199,7 +207,10 @@ function callFppApi(string $method, string $path, array $body = []): ?array {
  * NOTE: URL-encode the model name for spaces/special characters.
  */
 function applyStateToFPP(array $state, array $cfg, array $effects, array $palettes): bool {
-    $modelName  = rawurlencode($cfg['OverlayModelName']);
+    $modelNames = $cfg['OverlayModelNames'] ?? ['All Pixels'];
+    if (!is_array($modelNames)) $modelNames = [$modelNames];
+    if (empty($modelNames)) $modelNames = ['All Pixels'];
+
     $on         = (bool)($state['on'] ?? true);
     $globalBri  = (int)($state['bri'] ?? 255);
     $seg        = $state['seg'][0] ?? [];
@@ -213,17 +224,6 @@ function applyStateToFPP(array $state, array $cfg, array $effects, array $palett
 
     // Effective brightness (0–255)
     $effectiveBri = (int)round($globalBri * $segBri / 255);
-
-    // ── Step 1: Enable the overlay model ─────────────────────────────────────
-    callFppApi('POST', "/api/overlays/model/{$modelName}/state", ['State' => 1]);
-
-    // ── Step 2: Handle off / zero-brightness state ────────────────────────────
-    if (!$on || !$segOn || $effectiveBri === 0) {
-        callFppApi('POST', "/api/overlays/model/{$modelName}/effect/stop");
-        callFppApi('POST', "/api/overlays/model/{$modelName}/fill",
-                   ['r' => 0, 'g' => 0, 'b' => 0]);
-        return true;
-    }
 
     // ── Scale colours by effective brightness ─────────────────────────────────
     function scaledColor(array $rgb, int $bri): array {
@@ -241,28 +241,50 @@ function applyStateToFPP(array $state, array $cfg, array $effects, array $palett
     $colorHex = fn(array $rgb): string =>
         sprintf('%02X%02X%02X', $rgb[0], $rgb[1], $rgb[2]);
 
-    // ── Step 3: Solid color (effect 0) ────────────────────────────────────────
-    if ($fx === 0) {
-        callFppApi('POST', "/api/overlays/model/{$modelName}/effect/stop");
-        return (bool)callFppApi('POST', "/api/overlays/model/{$modelName}/fill",
-            ['r' => $c1[0], 'g' => $c1[1], 'b' => $c1[2]]);
+    // Apply to all selected models
+    $success = true;
+    foreach ($modelNames as $modelName) {
+        $modelName = trim($modelName);
+        if (empty($modelName)) continue;
+        $encodedName = rawurlencode($modelName);
+
+        // ── Step 1: Enable the overlay model ───────────────────────────────────
+        callFppApi('POST', "/api/overlays/model/{$encodedName}/state", ['State' => 1]);
+
+        // ── Step 2: Handle off / zero-brightness state ─────────────────────────
+        if (!$on || !$segOn || $effectiveBri === 0) {
+            callFppApi('POST', "/api/overlays/model/{$encodedName}/effect/stop");
+            callFppApi('POST', "/api/overlays/model/{$encodedName}/fill",
+                       ['r' => 0, 'g' => 0, 'b' => 0]);
+            continue;
+        }
+
+        // ── Step 3: Solid color (effect 0) ─────────────────────────────────────
+        if ($fx === 0) {
+            callFppApi('POST', "/api/overlays/model/{$encodedName}/effect/stop");
+            $success = (bool)callFppApi('POST', "/api/overlays/model/{$encodedName}/fill",
+                ['r' => $c1[0], 'g' => $c1[1], 'b' => $c1[2]]) && $success;
+            continue;
+        }
+
+        // ── Step 4: Animated WLED effect ───────────────────────────────────────
+        $effectName  = $effects[$fx]  ?? 'Solid';
+        $paletteName = $palettes[$pal] ?? 'Default';
+
+        $success = (bool)callFppApi('POST', "/api/overlays/model/{$encodedName}/effect/start", [
+            'effectType'            => 'WLED',
+            'effectName'            => $effectName,
+            'speed'                 => $sx,
+            'intensity'             => $ix,
+            'palette'               => $paletteName,
+            'color1'                => $colorHex($c1),
+            'color2'                => $colorHex($c2),
+            'color3'                => $colorHex($c3),
+            'autoResetAfterTimeout' => false,
+        ]) && $success;
     }
 
-    // ── Step 4: Animated WLED effect ──────────────────────────────────────────
-    $effectName  = $effects[$fx]  ?? 'Solid';
-    $paletteName = $palettes[$pal] ?? 'Default';
-
-    return (bool)callFppApi('POST', "/api/overlays/model/{$modelName}/effect/start", [
-        'effectType'            => 'WLED',
-        'effectName'            => $effectName,
-        'speed'                 => $sx,
-        'intensity'             => $ix,
-        'palette'               => $paletteName,
-        'color1'                => $colorHex($c1),
-        'color2'                => $colorHex($c2),
-        'color3'                => $colorHex($c3),
-        'autoResetAfterTimeout' => false,
-    ]);
+    return $success;
 }
 
 // ── Info JSON builder ─────────────────────────────────────────────────────────

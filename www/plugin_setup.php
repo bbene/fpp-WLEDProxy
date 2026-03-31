@@ -17,7 +17,7 @@ define('CONFIG_FILE', '/home/fpp/media/config/plugin.fpp-WLEDProxy.json');
 
 // ── Load config ───────────────────────────────────────────────────────────────
 $defaults = [
-    'OverlayModelName'   => 'All Pixels',
+    'OverlayModelNames'  => ['All Pixels'],
     'LEDCount'           => 300,
     'DeviceName'         => 'FPP WLED',
     'EnableUDPDiscovery' => true,
@@ -34,7 +34,13 @@ $saved   = false;
 $saveErr = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'save') {
-    $cfg['OverlayModelName']   = trim($_POST['OverlayModelName'] ?? $defaults['OverlayModelName']);
+    // Handle multiple model selection (array of checkboxes)
+    $selectedModels = [];
+    if (!empty($_POST['OverlayModelNames']) && is_array($_POST['OverlayModelNames'])) {
+        $selectedModels = array_map('trim', $_POST['OverlayModelNames']);
+        $selectedModels = array_filter($selectedModels);
+    }
+    $cfg['OverlayModelNames']  = !empty($selectedModels) ? $selectedModels : $defaults['OverlayModelNames'];
     $cfg['LEDCount']           = max(1, (int)($_POST['LEDCount'] ?? $defaults['LEDCount']));
     $cfg['DeviceName']         = trim($_POST['DeviceName'] ?? $defaults['DeviceName']);
     $cfg['EnableUDPDiscovery'] = isset($_POST['EnableUDPDiscovery']);
@@ -90,22 +96,29 @@ if (file_exists($stateFile)) {
         <input type="hidden" name="action" value="save">
 
         <div class="mb-3">
-        <label for="OverlayModelName" class="form-label">Pixel Overlay Model</label>
+        <label class="form-label">Pixel Overlay Models (select one or more)</label>
         <?php if (!empty($overlayModels)): ?>
-        <select id="OverlayModelName" name="OverlayModelName" class="form-control">
+        <div style="border: 1px solid #ddd; padding: 10px; border-radius: 4px; max-height: 250px; overflow-y: auto;">
             <?php foreach ($overlayModels as $model): ?>
-            <option value="<?= htmlspecialchars($model) ?>"
-                <?= $model === $cfg['OverlayModelName'] ? 'selected' : '' ?>>
-                <?= htmlspecialchars($model) ?>
-            </option>
+            <div class="form-check">
+                <input type="checkbox" id="model_<?= htmlspecialchars($model) ?>"
+                       name="OverlayModelNames[]" value="<?= htmlspecialchars($model) ?>"
+                       class="form-check-input"
+                       <?= in_array($model, $cfg['OverlayModelNames'] ?? []) ? 'checked' : '' ?>>
+                <label class="form-check-label" for="model_<?= htmlspecialchars($model) ?>">
+                    <?= htmlspecialchars($model) ?>
+                </label>
+            </div>
             <?php endforeach; ?>
-        </select>
-        <?php else: ?>
-        <input type="text" id="OverlayModelName" name="OverlayModelName" class="form-control"
-               value="<?= htmlspecialchars($cfg['OverlayModelName']) ?>">
-        <?php endif; ?>
-        <small class="form-text">The FPP Pixel Overlay Model that WLED effects will be applied to.
+        </div>
+        <small class="form-text d-block mt-2">WLED effects will be applied to all selected models simultaneously.
                Create models in <em>Content Setup → Pixel Overlay Models</em>.</small>
+        <?php else: ?>
+        <input type="text" id="OverlayModelNames" name="OverlayModelNames[]" class="form-control"
+               value="<?= htmlspecialchars($cfg['OverlayModelNames'][0] ?? '') ?>"
+               placeholder="Model name (no models fetched from FPP API)">
+        <small class="form-text">Could not fetch models from FPP API. Enter manually if needed.</small>
+        <?php endif; ?>
         </div>
 
         <div class="mb-3">

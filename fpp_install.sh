@@ -94,7 +94,7 @@ CONFIG_FILE="/home/fpp/media/config/plugin.fpp-WLEDProxy.json"
 if [ ! -f "${CONFIG_FILE}" ]; then
     cat > "${CONFIG_FILE}" <<'EOF'
 {
-    "OverlayModelName": "All Pixels",
+    "OverlayModelNames": ["All Pixels"],
     "LEDCount": 300,
     "DeviceName": "FPP WLED",
     "EnableUDPDiscovery": true
