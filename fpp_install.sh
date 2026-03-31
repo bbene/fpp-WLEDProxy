@@ -11,8 +11,7 @@ set -e
 
 PLUGIN_NAME="fpp-WLEDProxy"
 PLUGIN_DIR="/home/fpp/media/plugins/${PLUGIN_NAME}"
-FPP_WEB_ROOT="/opt/fpp/www"          # adjust if your FPP uses a different path
-LIGHTTPD_CONF_DIR="/etc/lighttpd/conf-enabled"
+FPP_WEB_ROOT="/opt/fpp/www"
 
 echo "[${PLUGIN_NAME}] Starting installation..."
 
@@ -22,6 +21,7 @@ apt-get install -qq -y \
     libjsoncpp-dev \
     libcurl4-openssl-dev \
     avahi-utils \
+    php-cli \
     2>/dev/null || true   # non-fatal — may already be present
 
 # ── 2. Compile the C++ plugin ─────────────────────────────────────────────────
@@ -31,7 +31,30 @@ make clean
 make -j"$(nproc)"
 echo "[${PLUGIN_NAME}] Compilation succeeded."
 
-# ── 3. Symlink the www/ directory into FPP's web root ─────────────────────────
+# ── 3. Clean up old Apache/lighttpd configs from prior versions ──────────────
+# Remove old Apache rewrite rules if present
+APACHE_SITE_CONF="/etc/apache2/sites-available/000-default.conf"
+if [ -f "${APACHE_SITE_CONF}" ]; then
+    if grep -q "WLED API Proxy" "${APACHE_SITE_CONF}" 2>/dev/null; then
+        sed -i '/# WLED API Proxy/,/<\/IfModule>/d' "${APACHE_SITE_CONF}" 2>/dev/null || true
+        if systemctl is-active --quiet apache2 2>/dev/null; then
+            systemctl reload apache2 2>/dev/null || true
+        fi
+        echo "[${PLUGIN_NAME}] Cleaned up old Apache WLED rewrite rules."
+    fi
+fi
+
+# Remove old lighttpd config if present
+LIGHTTPD_CONF="/etc/lighttpd/conf-enabled/88-wled-proxy.conf"
+if [ -f "${LIGHTTPD_CONF}" ]; then
+    rm -f "${LIGHTTPD_CONF}"
+    if systemctl is-active --quiet lighttpd 2>/dev/null; then
+        systemctl reload lighttpd 2>/dev/null || true
+    fi
+    echo "[${PLUGIN_NAME}] Cleaned up old lighttpd WLED config."
+fi
+
+# ── 4. Symlink the www/ directory into FPP's web root ─────────────────────────
 # FPP serves plugin PHP files from /opt/fpp/www/plugin/{name}/
 WEB_LINK="${FPP_WEB_ROOT}/plugin/${PLUGIN_NAME}"
 WEB_PARENT=$(dirname "${WEB_LINK}")
@@ -41,53 +64,22 @@ if [ ! -L "${WEB_LINK}" ]; then
     echo "[${PLUGIN_NAME}] Created web symlink: ${WEB_LINK}"
 fi
 
-# ── 4. Install Apache URL rewriting config ───────────────────────────────────
-# Routes /json/* and /win to our PHP handler so WLED apps find the API.
-# FPP v9 uses Apache with AllowOverride disabled globally, so .htaccess doesn't work.
-# Instead, we add rewrite rules directly to the VirtualHost config.
+# ── 5. Install systemd service ───────────────────────────────────────────────
+# The HTTP server runs on port 9000 via systemd service.
+SERVICE_DEST="/etc/systemd/system/fpp-wled-proxy.service"
+SERVICE_SRC="${PLUGIN_DIR}/systemd/fpp-wled-proxy.service"
 
-# Ensure Apache mod_rewrite is enabled
-if command -v a2enmod &>/dev/null; then
-    a2enmod rewrite 2>/dev/null || true
-    echo "[${PLUGIN_NAME}] Ensured Apache mod_rewrite is enabled."
-fi
-
-# Update Apache VirtualHost config to add rewrite rules
-APACHE_SITE_CONF="/etc/apache2/sites-available/000-default.conf"
-if [ -f "${APACHE_SITE_CONF}" ]; then
-    # Check if WLED rules already exist
-    if grep -q "WLED API Proxy" "${APACHE_SITE_CONF}"; then
-        echo "[${PLUGIN_NAME}] WLED rewrite rules already present in Apache config"
-    else
-        # Add WLED rewrite rules after DocumentRoot directive
-        REWRITE_RULES='
-
-    # WLED API Proxy - route /json/* and /win/* to plugin
-    <IfModule mod_rewrite.c>
-        RewriteEngine On
-        RewriteCond %{REQUEST_FILENAME} !-f
-        RewriteCond %{REQUEST_FILENAME} !-d
-        RewriteCond %{REQUEST_URI} ^/(json|win)
-        RewriteRule ^(json|win)(.*) /plugin/fpp-WLEDProxy/$1$2 [L,QSA,PT]
-    </IfModule>'
-        
-        # Use sed to insert after DocumentRoot line
-        sudo sed -i "/DocumentRoot \/opt\/fpp\/www/a\\${REWRITE_RULES}" "${APACHE_SITE_CONF}" 2>/dev/null || \
-        echo "[${PLUGIN_NAME}] WARNING: Could not modify Apache config. Please add rewrite rules manually."
-        
-        echo "[${PLUGIN_NAME}] Added WLED rewrite rules to Apache VirtualHost config."
-    fi
+if [ -f "${SERVICE_SRC}" ]; then
+    cp "${SERVICE_SRC}" "${SERVICE_DEST}"
+    chmod 644 "${SERVICE_DEST}"
+    systemctl daemon-reload
+    systemctl enable fpp-wled-proxy 2>/dev/null || true
+    echo "[${PLUGIN_NAME}] Installed systemd service: fpp-wled-proxy"
 else
-    echo "[${PLUGIN_NAME}] WARNING: Apache site config not found at ${APACHE_SITE_CONF}"
+    echo "[${PLUGIN_NAME}] WARNING: systemd service file not found at ${SERVICE_SRC}"
 fi
 
-# Reload Apache to apply rewrite rules
-if systemctl is-active --quiet apache2 2>/dev/null; then
-    systemctl reload apache2 2>/dev/null || service apache2 reload 2>/dev/null || true
-    echo "[${PLUGIN_NAME}] Apache reloaded."
-fi
-
-# ── 5. Create state and config directories ────────────────────────────────────
+# ── 6. Create state and config directories ────────────────────────────────────
 mkdir -p /home/fpp/media/config
 
 # Write a default plugin config if none exists
@@ -134,16 +126,16 @@ EOF
     echo "[${PLUGIN_NAME}] Created default state file: ${STATE_FILE}"
 fi
 
-# ── 6. Set permissions ─────────────────────────────────────────────────────────
+# ── 7. Set permissions ─────────────────────────────────────────────────────────
 chown -R fpp:fpp "${PLUGIN_DIR}" 2>/dev/null || true
 chmod +x "${PLUGIN_DIR}/fpp_start.sh" 2>/dev/null || true
 chmod +x "${PLUGIN_DIR}/fpp_stop.sh"  2>/dev/null || true
-
-# ── 7. Restart lighttpd to ensure all configs are loaded ───────────────────────
-systemctl restart lighttpd 2>/dev/null || service lighttpd restart 2>/dev/null || true
+chmod +x "${PLUGIN_DIR}/www/server.php" 2>/dev/null || true
 
 echo "[${PLUGIN_NAME}] Installation complete."
 echo "[${PLUGIN_NAME}] Next steps:"
 echo "   1. Go to FPP → Content Setup → Pixel Overlay Models and create a model."
 echo "   2. Visit FPP → Plugin Settings → WLED API Proxy to configure the model name."
-echo "   3. Verify plugin is enabled and restart FPP if needed."
+echo "   3. The HTTP server will start automatically on port 9000."
+echo "   4. Check status: systemctl status fpp-wled-proxy"
+echo "   5. View logs: journalctl -u fpp-wled-proxy -f"

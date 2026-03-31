@@ -179,7 +179,7 @@ if (file_exists($stateFile)) {
         </span>
         <span class="state-badge">Brightness: <?= (int)($state['bri'] ?? 255) ?>/255</span>
         <?php
-        $WLED_EFFECTS = json_decode(file_get_contents(__DIR__ . '/../data/effects.json') ?: '[]', true) ?? [];
+        $WLED_EFFECTS = json_decode(file_get_contents(__DIR__ . '/data/effects.json') ?: '[]', true) ?? [];
         $fx = (int)($state['seg'][0]['fx'] ?? 0);
         $fxName = $WLED_EFFECTS[$fx] ?? "Effect #{$fx}";
         ?>
@@ -221,7 +221,7 @@ if (file_exists($stateFile)) {
     <p>
         <strong>mDNS (Bonjour):</strong>
         FPP is advertised as <code><?= htmlspecialchars($cfg['DeviceName']) ?></code>
-        on service type <code>_wled._tcp</code>.
+        on service type <code>_wled._tcp</code> port <code>9000</code>.
         WLED apps that use mDNS discovery should find FPP automatically
         without any manual IP entry.
     </p>
@@ -231,8 +231,8 @@ if (file_exists($stateFile)) {
     </p>
     <p>
         <strong>Manual:</strong> Point any WLED app at
-        <code>http://<?= htmlspecialchars($_SERVER['HTTP_HOST'] ?? 'fpp.local') ?>/</code>
-        (port 80, no path prefix needed).
+        <code>http://<?= htmlspecialchars($_SERVER['HTTP_HOST'] ?? 'fpp.local') ?>:9000/</code>
+        (port 9000, no path prefix needed).
     </p>
 </div>
 

@@ -1,0 +1,25 @@
+[Unit]
+Description=FPP WLED API Proxy — Standalone HTTP Server
+Documentation=https://github.com/yourname/fpp-WLEDProxy
+After=network-online.target
+Wants=network-online.target
+ConditionPathExists=/home/fpp/media/plugins/fpp-WLEDProxy
+
+[Service]
+Type=simple
+User=fpp
+Group=fpp
+WorkingDirectory=/home/fpp/media/plugins/fpp-WLEDProxy
+
+# Run the PHP HTTP server
+ExecStart=/usr/bin/php /home/fpp/media/plugins/fpp-WLEDProxy/www/server.php
+
+# Restart if it crashes
+Restart=on-failure
+RestartSec=5s
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=fpp-wled-proxy
+
+[Install]
+WantedBy=multi-user.target

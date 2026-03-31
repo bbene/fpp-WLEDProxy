@@ -637,7 +637,7 @@ bool WLEDProxyPlugin::callFppApi(const std::string& method,
 // ── mDNS registration ────────────────────────────────────────────────────────
 
 void WLEDProxyPlugin::registerMdns() {
-    // Advertise as _wled._tcp on port 80 using avahi-publish-service.
+    // Advertise as _wled._tcp on port 9000 using avahi-publish-service.
     // This allows WLED apps to discover FPP via mDNS (Bonjour/Zeroconf).
     //
     // The service TXT records mirror what real WLED devices advertise.
@@ -645,7 +645,7 @@ void WLEDProxyPlugin::registerMdns() {
 
     char cmd[1024];
     snprintf(cmd, sizeof(cmd),
-        "avahi-publish-service '%s' _wled._tcp 80 "
+        "avahi-publish-service '%s' _wled._tcp 9000 "
         "\"mac=%s\" "
         "\"ip=\" "
         "\"version=0.14.0\" "
