@@ -164,14 +164,44 @@ function loadState(): array {
         'seg'        => $segments,
     ];
 
-    if (!file_exists(STATE_FILE)) return $default;
+    if (!file_exists(STATE_FILE)) {
+        // No state file - check FPP for actual effect state
+        $default['on'] = isAnyEffectRunning($cfg);
+        return $default;
+    }
+
     $raw   = file_get_contents(STATE_FILE);
     $state = json_decode($raw, true);
     if (!is_array($state)) return $default;
 
     // Preserve segments structure from config
     $state['seg'] = $segments;
+
+    // Sync 'on' state with FPP's actual effect status
+    $state['on'] = isAnyEffectRunning($cfg);
+
     return array_replace_recursive($default, $state);
+}
+
+/**
+ * Check if any of the selected overlay models have effects running in FPP.
+ */
+function isAnyEffectRunning(array $cfg): bool {
+    $modelNames = $cfg['OverlayModelNames'] ?? ['All Pixels'];
+    if (!is_array($modelNames)) $modelNames = [$modelNames];
+
+    foreach ($modelNames as $modelName) {
+        $encodedName = rawurlencode($modelName);
+        // Try to get model state from FPP
+        $modelInfo = callFppApi('GET', "/api/overlays/model/{$encodedName}");
+        if (is_array($modelInfo) && isset($modelInfo['effectRunning'])) {
+            if ($modelInfo['effectRunning']) {
+                return true;  // At least one model has an effect running
+            }
+        }
+    }
+
+    return false;  // No effects running on any model
 }
 
 function saveState(array $state): void {
