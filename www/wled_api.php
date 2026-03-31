@@ -618,6 +618,26 @@ if ($path === '/presets.json') {
     exit;
 }
 
+// GET /info.json — alternate path for device info (some clients use this)
+if ($path === '/info.json') {
+    $state = loadState();
+    echo json_encode(buildInfoJson($cfg, $state, count($WLED_EFFECTS), count($WLED_PALETTES)));
+    exit;
+}
+
+// GET /state.json — alternate path for state (some clients use this)
+if ($path === '/state.json') {
+    $state = loadState();
+    echo json_encode($state);
+    exit;
+}
+
+// GET /palettes.json — alternate path for palettes (some clients use this)
+if ($path === '/palettes.json') {
+    echo json_encode($WLED_PALETTES);
+    exit;
+}
+
 // GET /json/info
 if ($path === '/json/info') {
     $state = loadState();
