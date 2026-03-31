@@ -28,45 +28,8 @@ if (file_exists(CONFIG_FILE)) {
     if (is_array($loaded)) $cfg = array_merge($defaults, $loaded);
 }
 
-// ── Handle save ───────────────────────────────────────────────────────────────
-$saved   = false;
-$saveErr = '';
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'save') {
-    // Handle multiple model selection (array of checkboxes)
-    $selectedModels = [];
-    if (!empty($_POST['OverlayModelNames']) && is_array($_POST['OverlayModelNames'])) {
-        $selectedModels = array_map('trim', $_POST['OverlayModelNames']);
-        $selectedModels = array_filter($selectedModels);
-    }
-    $cfg['OverlayModelNames']  = !empty($selectedModels) ? $selectedModels : $defaults['OverlayModelNames'];
-    $cfg['DeviceName']         = trim($_POST['DeviceName'] ?? $defaults['DeviceName']);
-    $cfg['EnableUDPDiscovery'] = isset($_POST['EnableUDPDiscovery']);
-
-    // Infer LED count from selected models (use the max if multiple models have different counts)
-    $ledCounts = [];
-    foreach ($cfg['OverlayModelNames'] as $model) {
-        if (isset($modelPixelCounts[$model])) {
-            $ledCounts[] = $modelPixelCounts[$model];
-        }
-    }
-    if (!empty($ledCounts)) {
-        $cfg['LEDCount'] = max($ledCounts);
-    } else {
-        // Fallback if we couldn't determine from models
-        $cfg['LEDCount'] = 300;
-    }
-
-    if (file_put_contents(CONFIG_FILE, json_encode($cfg, JSON_PRETTY_PRINT)) !== false) {
-        $saved = true;
-        // Restart fppd is ideal; at minimum refresh state
-        exec('sudo systemctl try-reload-or-restart fppd 2>/dev/null &');
-    } else {
-        $saveErr = 'Could not write config file: ' . CONFIG_FILE;
-    }
-}
-
 // ── Fetch available Pixel Overlay Models from FPP API ─────────────────────────
+// Do this BEFORE handling save so we have pixel counts available
 $overlayModels = [];
 $modelPixelCounts = []; // Map of model name => pixel count
 $modelsRaw = @file_get_contents('http://localhost/api/overlays/models');
@@ -87,6 +50,45 @@ if ($modelsRaw !== false) {
                 }
             }
         }
+    }
+}
+
+// ── Handle save ───────────────────────────────────────────────────────────────
+$saved   = false;
+$saveErr = '';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'save') {
+    // Handle multiple model selection (array of checkboxes)
+    $selectedModels = [];
+    if (!empty($_POST['OverlayModelNames']) && is_array($_POST['OverlayModelNames'])) {
+        $selectedModels = array_map('trim', $_POST['OverlayModelNames']);
+        $selectedModels = array_filter($selectedModels);
+    }
+    $cfg['OverlayModelNames']  = !empty($selectedModels) ? $selectedModels : $defaults['OverlayModelNames'];
+    $cfg['DeviceName']         = trim($_POST['DeviceName'] ?? $defaults['DeviceName']);
+    $cfg['EnableUDPDiscovery'] = isset($_POST['EnableUDPDiscovery']);
+
+    // Infer LED count from selected models (use the max if multiple models have different counts)
+    // modelPixelCounts is now populated from the API fetch above
+    $ledCounts = [];
+    foreach ($cfg['OverlayModelNames'] as $model) {
+        if (isset($modelPixelCounts[$model])) {
+            $ledCounts[] = $modelPixelCounts[$model];
+        }
+    }
+    if (!empty($ledCounts)) {
+        $cfg['LEDCount'] = max($ledCounts);
+    } else {
+        // Fallback if we couldn't determine from models
+        $cfg['LEDCount'] = 300;
+    }
+
+    if (file_put_contents(CONFIG_FILE, json_encode($cfg, JSON_PRETTY_PRINT)) !== false) {
+        $saved = true;
+        // Restart fppd is ideal; at minimum refresh state
+        exec('sudo systemctl try-reload-or-restart fppd 2>/dev/null &');
+    } else {
+        $saveErr = 'Could not write config file: ' . CONFIG_FILE;
     }
 }
 
