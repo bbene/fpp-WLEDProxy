@@ -58,70 +58,38 @@ fwrite(STDOUT, "WLED API Server listening on {$HOST}:{$PORT}\n");
 fwrite(STDOUT, "Logging to syslog (journalctl -u fpp-wled-proxy -f)\n");
 fwrite(STDOUT, "Press Ctrl+C to stop\n");
 
-// Handle signals gracefully
-$shutdown = false;
-if (function_exists('pcntl_signal')) {
-    pcntl_signal(SIGTERM, function() use (&$shutdown) { $shutdown = true; });
-    pcntl_signal(SIGINT, function() use (&$shutdown) { $shutdown = true; });
-}
-
-// Main server loop
-while (!$shutdown) {
+// Main server loop - systemd will handle shutdown via SIGTERM/SIGKILL
+while (true) {
     $read = [$socket];
     $write = null;
     $except = null;
-    $tv_sec = 1; // 1 second timeout
 
-    if (function_exists('socket_select')) {
-        $num = @socket_select($read, $write, $except, $tv_sec);
-        if ($num === false) {
-            $err = socket_last_error();
-            // EINTR = 4 (Interrupted system call) - retry instead of breaking
-            if ($err != 4) {
-                fwrite(STDERR, "socket_select error: $err\n");
-                break;
-            }
-            if (function_exists('pcntl_signal_dispatch')) {
-                pcntl_signal_dispatch();
-            }
-            continue;
-        }
-        if ($num === 0) {
-            if (function_exists('pcntl_signal_dispatch')) {
-                pcntl_signal_dispatch();
-            }
-            continue;
-        }
-    }
-
+    // Use non-blocking accept with a small timeout
+    socket_set_nonblock($socket);
     $client = @socket_accept($socket);
+
     if ($client === false) {
+        usleep(10000); // 10ms sleep when no connection
         continue;
     }
 
-    // Set non-blocking for client read
-    socket_set_nonblock($client);
+    socket_set_block($socket);
 
-    // Read HTTP request with retry loop
+    // Read HTTP request
     $request = '';
-    $attempts = 0;
-    while ($attempts < 100) {
+    socket_set_block($client);
+
+    // Read until we have the full headers
+    while (true) {
         $chunk = @socket_read($client, 4096);
-        if ($chunk === '') {
+        if ($chunk === '' || $chunk === false) {
             break;
-        }
-        if ($chunk === false) {
-            $attempts++;
-            usleep(1000);
-            continue;
         }
         $request .= $chunk;
         if (strpos($request, "\r\n\r\n") !== false) {
             break;
         }
     }
-
-    socket_set_block($client);
 
     if (empty($request)) {
         socket_close($client);
