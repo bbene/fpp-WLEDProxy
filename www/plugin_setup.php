@@ -65,19 +65,9 @@ if (file_exists($stateFile)) {
     $state = json_decode(file_get_contents($stateFile), true);
 }
 
-?><!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FPP WLED API Proxy — Settings</title>
-    <?php
-    // Include FPP's footer CSS if available
-    $fppFooter = '/opt/fpp/www/common/footer.inc';
-    // Note: We don't include menuHead.inc as it contains initialSetup redirects
-    // that are not applicable to plugin settings pages
-    ?>
-    <style>
+?>
+
+<style>
         * { box-sizing: border-box; }
         body        { font-family: Arial, sans-serif; max-width: 820px; margin: 0 auto; padding: 16px; background: #f5f5f5; }
         h1          { color: #333; margin-top: 0; }
@@ -108,8 +98,6 @@ if (file_exists($stateFile)) {
         th, td      { border: 1px solid #ddd; padding: 6px 10px; text-align: left; font-size: 0.9em; }
         th          { background: #f0f0f0; }
     </style>
-</head>
-<body>
 
 <div style="text-align: right; margin-bottom: 16px;">
     <a href="/" style="font-size: 0.9em; text-decoration: none; color: #0066cc;">← Back to FPP</a>
@@ -241,11 +229,3 @@ if (file_exists($stateFile)) {
         (port 9000, no path prefix needed).
     </p>
 </div>
-
-
-<?php
-$fppFooter = '/opt/fpp/www/common/footer.inc';
-if (file_exists($fppFooter)) include $fppFooter;
-?>
-</body>
-</html>
