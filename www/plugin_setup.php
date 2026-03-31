@@ -6,6 +6,12 @@
  * (Or directly at /plugin/fpp-WLEDProxy/plugin_setup.php)
  */
 
+// Redirect to plugin.php wrapper so we get FPP's header and footer
+if (!isset($_GET['wrapped'])) {
+    header('Location: /plugin.php?plugin=fpp-WLEDProxy&page=plugin_setup.php&wrapped=1');
+    exit;
+}
+
 define('CONFIG_FILE', '/home/fpp/media/config/plugin.fpp-WLEDProxy.json');
 
 // ── Load config ───────────────────────────────────────────────────────────────
