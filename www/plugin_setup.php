@@ -73,19 +73,17 @@ $modelsRaw = @file_get_contents('http://localhost/api/overlays/models');
 if ($modelsRaw !== false) {
     $modelsData = json_decode($modelsRaw, true);
     if (is_array($modelsData)) {
-        // FPP returns an array of model objects or just names depending on version
+        // FPP returns array of model objects with ChannelCount and ChannelCountPerNode
         foreach ($modelsData as $m) {
             if (is_string($m)) {
                 $overlayModels[] = $m;
-                // Try to fetch model details to get pixel count
-                $modelDetails = @json_decode(@file_get_contents('http://localhost/api/overlays/model/' . urlencode($m)), true);
-                if (is_array($modelDetails) && isset($modelDetails['pixelCount'])) {
-                    $modelPixelCounts[$m] = (int)$modelDetails['pixelCount'];
-                }
             } elseif (is_array($m) && isset($m['Name'])) {
                 $overlayModels[] = $m['Name'];
-                if (isset($m['pixelCount'])) {
-                    $modelPixelCounts[$m['Name']] = (int)$m['pixelCount'];
+                // Calculate pixel count from ChannelCount / ChannelCountPerNode
+                // (e.g., 660 channels / 3 = 220 pixels for RGB)
+                if (isset($m['ChannelCount'], $m['ChannelCountPerNode']) && $m['ChannelCountPerNode'] > 0) {
+                    $pixelCount = (int)($m['ChannelCount'] / $m['ChannelCountPerNode']);
+                    $modelPixelCounts[$m['Name']] = $pixelCount;
                 }
             }
         }
