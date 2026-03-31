@@ -166,6 +166,13 @@ function loadState(): array {
         'transition' => 7,
         'ps'         => -1,
         'mainseg'    => 0,
+        'nightlight' => [
+            'on'  => false,
+            'dur' => 60,
+            'mode' => 0,
+            'tbri' => 0,
+            'rem' => 0,
+        ],
         'seg'        => $segments,
     ];
 
