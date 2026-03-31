@@ -101,6 +101,8 @@ if [ ! -f "${CONFIG_FILE}" ]; then
 }
 EOF
     echo "[${PLUGIN_NAME}] Created default config: ${CONFIG_FILE}"
+    chown fpp:fpp "${CONFIG_FILE}"
+    chmod 664 "${CONFIG_FILE}"
 fi
 
 # Write a default state file if none exists
@@ -131,6 +133,8 @@ if [ ! -f "${STATE_FILE}" ]; then
 }
 EOF
     echo "[${PLUGIN_NAME}] Created default state file: ${STATE_FILE}"
+    chown fpp:fpp "${STATE_FILE}"
+    chmod 664 "${STATE_FILE}"
 fi
 
 # ── 7. Set permissions ─────────────────────────────────────────────────────────
