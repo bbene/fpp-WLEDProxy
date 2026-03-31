@@ -18,7 +18,6 @@ define('CONFIG_FILE', '/home/fpp/media/config/plugin.fpp-WLEDProxy.json');
 // ── Load config ───────────────────────────────────────────────────────────────
 $defaults = [
     'OverlayModelNames'  => ['All Pixels'],
-    'LEDCount'           => 300,
     'DeviceName'         => 'FPP WLED',
     'EnableUDPDiscovery' => true,
 ];
@@ -41,9 +40,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         $selectedModels = array_filter($selectedModels);
     }
     $cfg['OverlayModelNames']  = !empty($selectedModels) ? $selectedModels : $defaults['OverlayModelNames'];
-    $cfg['LEDCount']           = max(1, (int)($_POST['LEDCount'] ?? $defaults['LEDCount']));
     $cfg['DeviceName']         = trim($_POST['DeviceName'] ?? $defaults['DeviceName']);
     $cfg['EnableUDPDiscovery'] = isset($_POST['EnableUDPDiscovery']);
+
+    // Infer LED count from selected models (use the max if multiple models have different counts)
+    $ledCounts = [];
+    foreach ($cfg['OverlayModelNames'] as $model) {
+        if (isset($modelPixelCounts[$model])) {
+            $ledCounts[] = $modelPixelCounts[$model];
+        }
+    }
+    if (!empty($ledCounts)) {
+        $cfg['LEDCount'] = max($ledCounts);
+    } else {
+        // Fallback if we couldn't determine from models
+        $cfg['LEDCount'] = 300;
+    }
 
     if (file_put_contents(CONFIG_FILE, json_encode($cfg, JSON_PRETTY_PRINT)) !== false) {
         $saved = true;
@@ -56,6 +68,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 
 // ── Fetch available Pixel Overlay Models from FPP API ─────────────────────────
 $overlayModels = [];
+$modelPixelCounts = []; // Map of model name => pixel count
 $modelsRaw = @file_get_contents('http://localhost/api/overlays/models');
 if ($modelsRaw !== false) {
     $modelsData = json_decode($modelsRaw, true);
@@ -64,8 +77,16 @@ if ($modelsRaw !== false) {
         foreach ($modelsData as $m) {
             if (is_string($m)) {
                 $overlayModels[] = $m;
+                // Try to fetch model details to get pixel count
+                $modelDetails = @json_decode(@file_get_contents('http://localhost/api/overlays/model/' . urlencode($m)), true);
+                if (is_array($modelDetails) && isset($modelDetails['pixelCount'])) {
+                    $modelPixelCounts[$m] = (int)$modelDetails['pixelCount'];
+                }
             } elseif (is_array($m) && isset($m['Name'])) {
                 $overlayModels[] = $m['Name'];
+                if (isset($m['pixelCount'])) {
+                    $modelPixelCounts[$m['Name']] = (int)$m['pixelCount'];
+                }
             }
         }
     }
@@ -103,10 +124,14 @@ if (file_exists($stateFile)) {
             <div style="margin: 0; padding: 0; margin-bottom: 8px;">
                 <input type="checkbox" id="model_<?= htmlspecialchars($model) ?>"
                        name="OverlayModelNames[]" value="<?= htmlspecialchars($model) ?>"
-                       class="form-check-input" style="margin-right: 8px;"
+                       class="form-check-input model-selector" style="margin-right: 8px;"
+                       data-pixels="<?= $modelPixelCounts[$model] ?? '0' ?>"
                        <?= in_array($model, $cfg['OverlayModelNames'] ?? []) ? 'checked' : '' ?>>
                 <label class="form-check-label" for="model_<?= htmlspecialchars($model) ?>" style="display: inline; margin: 0;">
                     <?= htmlspecialchars($model) ?>
+                    <?php if (isset($modelPixelCounts[$model])): ?>
+                        <span style="color: #666; font-size: 0.9em;">(<?= $modelPixelCounts[$model] ?> pixels)</span>
+                    <?php endif; ?>
                 </label>
             </div>
             <?php endforeach; ?>
@@ -122,11 +147,15 @@ if (file_exists($stateFile)) {
         </div>
 
         <div class="mb-3">
-        <label for="LEDCount" class="form-label">LED / Pixel Count</label>
-        <input type="number" id="LEDCount" name="LEDCount" class="form-control"
-               value="<?= (int)$cfg['LEDCount'] ?>" min="1" max="16384">
-        <small class="form-text">Number of pixels in the overlay model. Reported to WLED apps
-               so they can display segment sliders correctly.</small>
+        <label class="form-label">Total LED / Pixel Count</label>
+        <div class="form-control" style="background-color: #f5f5f5; border-color: #ddd; color: #666;">
+            <?php
+            $inferredCount = $cfg['LEDCount'] ?? 300;
+            echo "Maximum pixels from selected models: <strong>" . (int)$inferredCount . "</strong>";
+            ?>
+        </div>
+        <small class="form-text d-block mt-2">Pixel count is automatically inferred from your selected overlay models
+               and reported to WLED apps for proper segment slider display.</small>
         </div>
 
         <div class="mb-3">

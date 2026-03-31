@@ -34,7 +34,7 @@ define('FPP_API_BASE', 'http://localhost');   // FPP internal API base URL
 function loadConfig(): array {
     $defaults = [
         'OverlayModelNames'  => ['All Pixels'],
-        'LEDCount'           => 300,
+        'LEDCount'           => 300,  // Fallback if not calculated
         'DeviceName'         => 'FPP WLED',
         'EnableUDPDiscovery' => true,
     ];
@@ -49,7 +49,14 @@ function loadConfig(): array {
         unset($cfg['OverlayModelName']);
     }
 
-    return array_merge($defaults, $cfg);
+    $merged = array_merge($defaults, $cfg);
+
+    // Ensure LEDCount is always set (from config or fallback)
+    if (empty($merged['LEDCount']) || $merged['LEDCount'] < 1) {
+        $merged['LEDCount'] = 300;
+    }
+
+    return $merged;
 }
 
 $cfg = loadConfig();
