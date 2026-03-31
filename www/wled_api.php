@@ -607,14 +607,16 @@ if ($path === '/json/nodes') {
 
 // GET /presets.json — saved presets/profiles (WLED compatibility)
 if ($path === '/presets.json') {
-    // Return empty presets object - we don't have preset storage in FPP
-    echo json_encode([
-        '0' => [
-            'n' => 'Default',
-            'p' => 1,
-            'ql' => 255,
+    // Return presets as object (not array) - wled library expects dictionary format
+    // Format: {"0": {"n": "Preset Name", "p": palette, "ql": 255}, ...}
+    $presets = (object)[
+        "0" => (object)[
+            "n" => "Default",
+            "p" => 0,
+            "ql" => 255,
         ],
-    ]);
+    ];
+    echo json_encode($presets);
     exit;
 }
 
