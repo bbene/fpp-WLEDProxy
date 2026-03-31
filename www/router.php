@@ -9,9 +9,9 @@
 
 $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 
-// Serve plugin_setup.php directly
+// Serve plugin_setup.php directly (it's in the parent directory)
 if ($path === '/plugin_setup.php') {
-    require __DIR__ . '/plugin_setup.php';
+    require __DIR__ . '/../plugin_setup.php';
     return;
 }
 
