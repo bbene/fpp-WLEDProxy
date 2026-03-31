@@ -200,7 +200,15 @@ function loadState(): array {
     $state['seg'] = $segments;
     $state['on'] = $deviceOn;
 
+    // Merge with defaults, ensuring all required fields are present
     $merged = array_replace_recursive($default, $state);
+
+    // Ensure all required top-level fields from default are present
+    foreach ($default as $key => $value) {
+        if (!isset($merged[$key])) {
+            $merged[$key] = $value;
+        }
+    }
 
     // Convert segments array to associative array keyed by segment ID (wled library expects object)
     $segsByID = [];
