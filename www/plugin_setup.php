@@ -111,6 +111,10 @@ if (file_exists($stateFile)) {
 </head>
 <body>
 
+<div style="text-align: right; margin-bottom: 16px;">
+    <a href="/" style="font-size: 0.9em; text-decoration: none; color: #0066cc;">← Back to FPP</a>
+</div>
+
 <h1>🌈 FPP WLED API Proxy</h1>
 <p>Makes FPP discoverable and controllable by any WLED-compatible app
    (Lightbow, WLED Wiz, Home Assistant, etc.) by emulating the WLED JSON API.</p>
@@ -237,6 +241,7 @@ if (file_exists($stateFile)) {
         (port 9000, no path prefix needed).
     </p>
 </div>
+
 
 <?php
 $fppFooter = '/opt/fpp/www/common/footer.inc';
