@@ -105,7 +105,7 @@ $WLED_PALETTES = [
 
 // ── State helpers ─────────────────────────────────────────────────────────────
 
-function buildSegments(array $cfg): array {
+function buildSegments(array $cfg, bool $deviceOn = false): array {
     // Build WLED segments - one per selected model
     $segments = [];
     $modelNames = $cfg['OverlayModelNames'] ?? ['All Pixels'];
@@ -129,7 +129,7 @@ function buildSegments(array $cfg): array {
             'pal'   => 0,
             'sel'   => ($idx === 0),
             'rev'   => false,
-            'on'    => true,
+            'on'    => $deviceOn,  // Segment on state matches device on state
             'bri'   => 255,
             'col'   => [[255,0,0],[0,0,0],[0,0,0]],
         ];
@@ -140,14 +140,19 @@ function buildSegments(array $cfg): array {
         'id'  => 0, 'start' => 0, 'stop' => 300, 'len' => 300,
         'grp' => 1, 'spc'   => 0,
         'fx'  => 0, 'sx'    => 128, 'ix'  => 128, 'pal' => 0,
-        'sel' => true, 'rev' => false, 'on' => true, 'bri' => 255,
+        'sel' => true, 'rev' => false, 'on' => $deviceOn, 'bri' => 255,
         'col' => [[255,0,0],[0,0,0],[0,0,0]],
     ]];
 }
 
 function loadState(): array {
     $cfg = loadConfig();
-    $segments = buildSegments($cfg);
+
+    // Check FPP for actual effect state
+    $deviceOn = isAnyEffectRunning($cfg);
+
+    // Build segments with state synchronized to device on/off
+    $segments = buildSegments($cfg, $deviceOn);
 
     // Calculate total LED count from all segments
     $totalLeds = 0;
@@ -156,7 +161,7 @@ function loadState(): array {
     }
 
     $default = [
-        'on'         => false,
+        'on'         => $deviceOn,
         'bri'        => 255,
         'transition' => 7,
         'ps'         => -1,
@@ -165,8 +170,6 @@ function loadState(): array {
     ];
 
     if (!file_exists(STATE_FILE)) {
-        // No state file - check FPP for actual effect state
-        $default['on'] = isAnyEffectRunning($cfg);
         return $default;
     }
 
@@ -174,11 +177,9 @@ function loadState(): array {
     $state = json_decode($raw, true);
     if (!is_array($state)) return $default;
 
-    // Preserve segments structure from config
+    // Preserve segments structure and on state from FPP sync
     $state['seg'] = $segments;
-
-    // Sync 'on' state with FPP's actual effect status
-    $state['on'] = isAnyEffectRunning($cfg);
+    $state['on'] = $deviceOn;
 
     return array_replace_recursive($default, $state);
 }
