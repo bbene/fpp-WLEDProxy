@@ -72,9 +72,11 @@ if (file_exists($stateFile)) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FPP WLED API Proxy — Settings</title>
     <?php
-    // Include FPP's standard stylesheets if available
-    $fppHeader = '/opt/fpp/www/common/header.inc';
-    if (file_exists($fppHeader)) include $fppHeader;
+    // Include FPP's HTML meta and menu head
+    $fppMeta = '/opt/fpp/www/common/htmlMeta.inc';
+    if (file_exists($fppMeta)) include $fppMeta;
+    $fppMenuHead = '/opt/fpp/www/common/menuHead.inc';
+    if (file_exists($fppMenuHead)) include $fppMenuHead;
     ?>
     <style>
         body        { font-family: Arial, sans-serif; max-width: 820px; margin: 24px auto; padding: 0 16px; }
