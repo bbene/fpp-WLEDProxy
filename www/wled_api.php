@@ -394,33 +394,44 @@ function buildInfoJson(array $cfg, array $state, int $fxcount, int $palcount): a
         'ver'      => '0.14.0',
         'vid'      => 2110050,
         'leds'     => [
+            'cct'    => false,
             'count'  => $totalLeds,
-            'rgbw'   => false,
-            'wleds'  => 0,
             'fps'    => 30,
             'pwr'    => 0,
             'maxpwr' => 0,
             'maxseg' => count($state['seg'] ?? []),
+            'rgbw'   => false,
+            'wv'     => false,
+            'lc'     => 0,
+            'seglc'  => 0,
         ],
         'str'      => false,
         'name'     => $cfg['DeviceName'],
         'udpport'  => 21324,
         'live'     => false,
-        'liveseg'  => -1,
-        'liveip'   => '',
+        'lm'       => '',
+        'lip'      => '',
         'ws'       => 0,
         'fxcount'  => $fxcount,
         'palcount' => $palcount,
-        'wifi'     => ['bssid' => '', 'rssi' => -50, 'signal' => 100, 'channel' => 0],
+        'wifi'     => ['bssid' => '', 'signal' => 100, 'channel' => 0],
+        'fs'       => [
+            'u'   => 0,      // used space in kilobytes
+            't'   => 1024,   // total size in kilobytes
+            'pmt' => time(), // unix timestamp for last modification
+        ],
+        'ndc'      => 0,
         'arch'     => 'esp32',
         'core'     => 'fpp',
         'lwip'     => 0,
+        'freeheap' => 8000,
+        'uptime'   => intval(function_exists('microtime') ? microtime(true) : time()),
+        'opt'      => 0,
+        'brand'    => 'FPP',
+        'product'  => 'Falcon Player',
+        'btype'    => 'fpd',
         'mac'      => $mac,
         'ip'       => $_SERVER['SERVER_ADDR'] ?? '',
-        'filesystem' => [
-            'u' => 0,
-            't' => 1024,
-        ],
     ];
 }
 
