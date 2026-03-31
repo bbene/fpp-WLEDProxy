@@ -156,7 +156,7 @@ function loadState(): array {
     }
 
     $default = [
-        'on'         => true,
+        'on'         => false,
         'bri'        => 255,
         'transition' => 7,
         'ps'         => -1,

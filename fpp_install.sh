@@ -110,7 +110,7 @@ STATE_FILE="/home/fpp/media/config/wled_proxy_state.json"
 if [ ! -f "${STATE_FILE}" ]; then
     cat > "${STATE_FILE}" <<'EOF'
 {
-    "on": true,
+    "on": false,
     "bri": 255,
     "transition": 7,
     "ps": -1,
