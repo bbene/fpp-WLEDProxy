@@ -74,7 +74,6 @@ if (file_exists($stateFile)) {
 
 ?>
 
-<h1>🌈 FPP WLED API Proxy</h1>
 <p>Makes FPP discoverable and controllable by any WLED-compatible app
    (Lightbow, WLED Wiz, Home Assistant, etc.) by emulating the WLED JSON API.</p>
 
@@ -85,14 +84,15 @@ if (file_exists($stateFile)) {
 <?php endif; ?>
 
 <!-- ── Settings form ─────────────────────────────────────────────────────── -->
-<div class="card">
+<div class="row"><div class="col-lg-6">
     <h2>Plugin Settings</h2>
     <form method="POST">
         <input type="hidden" name="action" value="save">
 
-        <label for="OverlayModelName">Pixel Overlay Model</label>
+        <div class="mb-3">
+        <label for="OverlayModelName" class="form-label">Pixel Overlay Model</label>
         <?php if (!empty($overlayModels)): ?>
-        <select id="OverlayModelName" name="OverlayModelName">
+        <select id="OverlayModelName" name="OverlayModelName" class="form-control">
             <?php foreach ($overlayModels as $model): ?>
             <option value="<?= htmlspecialchars($model) ?>"
                 <?= $model === $cfg['OverlayModelName'] ? 'selected' : '' ?>>
@@ -101,38 +101,42 @@ if (file_exists($stateFile)) {
             <?php endforeach; ?>
         </select>
         <?php else: ?>
-        <input type="text" id="OverlayModelName" name="OverlayModelName"
+        <input type="text" id="OverlayModelName" name="OverlayModelName" class="form-control"
                value="<?= htmlspecialchars($cfg['OverlayModelName']) ?>">
         <?php endif; ?>
-        <small>The FPP Pixel Overlay Model that WLED effects will be applied to.
+        <small class="form-text">The FPP Pixel Overlay Model that WLED effects will be applied to.
                Create models in <em>Content Setup → Pixel Overlay Models</em>.</small>
-
-        <label for="LEDCount">LED / Pixel Count</label>
-        <input type="number" id="LEDCount" name="LEDCount"
-               value="<?= (int)$cfg['LEDCount'] ?>" min="1" max="16384">
-        <small>Number of pixels in the overlay model. Reported to WLED apps
-               so they can display segment sliders correctly.</small>
-
-        <label for="DeviceName">Device Name (shown in WLED apps)</label>
-        <input type="text" id="DeviceName" name="DeviceName"
-               value="<?= htmlspecialchars($cfg['DeviceName']) ?>" maxlength="32">
-        <small>Name advertised via mDNS and returned in <code>/json/info</code>.</small>
-
-        <div class="checkbox-row">
-            <input type="checkbox" id="EnableUDPDiscovery" name="EnableUDPDiscovery"
-                   <?= $cfg['EnableUDPDiscovery'] ? 'checked' : '' ?>>
-            <label for="EnableUDPDiscovery" style="margin:0">
-                Enable UDP discovery (port 21324)</label>
         </div>
-        <small style="margin-left:24px">
-            Allows WLED apps that use UDP broadcast to find FPP automatically.
-            Requires the C++ plugin to be compiled and loaded by fppd.
-        </small>
 
-        <br>
-        <input type="submit" value="💾 Save Settings">
+        <div class="mb-3">
+        <label for="LEDCount" class="form-label">LED / Pixel Count</label>
+        <input type="number" id="LEDCount" name="LEDCount" class="form-control"
+               value="<?= (int)$cfg['LEDCount'] ?>" min="1" max="16384">
+        <small class="form-text">Number of pixels in the overlay model. Reported to WLED apps
+               so they can display segment sliders correctly.</small>
+        </div>
+
+        <div class="mb-3">
+        <label for="DeviceName" class="form-label">Device Name (shown in WLED apps)</label>
+        <input type="text" id="DeviceName" name="DeviceName" class="form-control"
+               value="<?= htmlspecialchars($cfg['DeviceName']) ?>" maxlength="32">
+        <small class="form-text">Name advertised via mDNS and returned in <code>/json/info</code>.</small>
+        </div>
+
+        <div class="mb-3 form-check">
+            <input type="checkbox" id="EnableUDPDiscovery" name="EnableUDPDiscovery" class="form-check-input"
+                   <?= $cfg['EnableUDPDiscovery'] ? 'checked' : '' ?>>
+            <label for="EnableUDPDiscovery" class="form-check-label">
+                Enable UDP discovery (port 21324)</label>
+            <small class="form-text d-block mt-2">
+                Allows WLED apps that use UDP broadcast to find FPP automatically.
+                Requires the C++ plugin to be compiled and loaded by fppd.
+            </small>
+        </div>
+
+        <button type="submit" class="btn btn-primary">💾 Save Settings</button>
     </form>
-</div>
+</div></div>
 
 <!-- ── Current state ─────────────────────────────────────────────────────── -->
 <div class="card">
