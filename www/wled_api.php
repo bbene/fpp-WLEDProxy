@@ -539,13 +539,13 @@ if ($path === '/win') {
 
 $state = loadState();
 
-// GET /json/effects
+// GET /json/effects  (also accepts /json/eff)
 if ($path === '/json/effects' || $path === '/json/eff') {
     echo json_encode($WLED_EFFECTS);
     exit;
 }
 
-// GET /json/palettes
+// GET /json/palettes  (also accepts /json/pal)
 if ($path === '/json/palettes' || $path === '/json/pal') {
     echo json_encode($WLED_PALETTES);
     exit;
