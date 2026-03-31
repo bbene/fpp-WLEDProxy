@@ -549,7 +549,7 @@ if ($path === '/json/state' && $method === 'POST') {
     $response = $state;
     if (!empty($inputBody['v'])) {
         // Include info in the response
-        $response['info'] = buildInfoJson($cfg, count($WLED_EFFECTS), count($WLED_PALETTES));
+        $response['info'] = buildInfoJson($cfg, $state, count($WLED_EFFECTS), count($WLED_PALETTES));
     }
     echo json_encode($response);
     exit;
@@ -570,7 +570,7 @@ if ($path === '/json/si') {
     }
     echo json_encode([
         'state' => $state,
-        'info'  => buildInfoJson($cfg, count($WLED_EFFECTS), count($WLED_PALETTES)),
+        'info'  => buildInfoJson($cfg, $state, count($WLED_EFFECTS), count($WLED_PALETTES)),
     ]);
     exit;
 }
@@ -585,7 +585,7 @@ if ($path === '/json' || str_starts_with($path, '/json')) {
 
     echo json_encode([
         'state'    => $state,
-        'info'     => buildInfoJson($cfg, count($WLED_EFFECTS), count($WLED_PALETTES)),
+        'info'     => buildInfoJson($cfg, $state, count($WLED_EFFECTS), count($WLED_PALETTES)),
         'effects'  => $WLED_EFFECTS,
         'palettes' => $WLED_PALETTES,
     ]);
